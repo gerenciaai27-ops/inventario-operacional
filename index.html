@@ -256,7 +256,7 @@ const SECS = {
 };
 
 const STS   = ["ENTREGADO","PENDIENTE","EN PROCESO","BAJA/FALLA"];
-const SICO  = {"ENTREGADO":"✅",:"📝","EN PROCESO":"🔄","NO ENTREGADO":"❌"};
+const SICO  = {"ENTREGADO":"✅","PENDIENTE":"⏳","EN PROCESO":"🔄","BAJA/FALLA":"❌"};
 const SCSS  = {"ENTREGADO":"s-E","PENDIENTE":"s-P","EN PROCESO":"s-N","BAJA/FALLA":"s-B"};
 
 let DATA = Object.fromEntries(Object.keys(SECS).map(k=>[k,[]]));
