@@ -203,6 +203,13 @@
   .viewer-notice{background:var(--blue-bg);color:var(--blue);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;margin-bottom:14px;}
 
   .client-card{background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s;}
+  /* TIMER STATES */
+  .timer-ok{color:var(--green);font-weight:700;}
+  .timer-warn{color:#D97706;font-weight:700;}
+  .timer-alert{color:var(--red);font-weight:700;animation:pulse-alert 1.2s infinite;}
+  @keyframes pulse-alert{0%,100%{opacity:1}50%{opacity:.45}}
+  tr[style*="background:#FFF5F5"]:hover td{background:#FEE2E2 !important;}
+  .coment-input:focus{outline:none;border-color:var(--cyan);}
   .client-card:hover{border-color:var(--cyan);background:#F0FBFF;}
   .client-card.selected{border-color:var(--cyan);background:#E0F7FF;box-shadow:0 0 0 3px rgba(0,194,255,.15);}
   .client-icon{font-size:22px;margin-bottom:4px;}
@@ -305,9 +312,10 @@
 <script>
 // ── AUTH & CLIENT PROFILES ────────────────────────────────────────────────────
 const USERS = {
-  gerencia:   {pass:"Ops2026",   role:"admin",   client:"admin"},
-  mercadolibre:{pass:"ML2026",   role:"admin",   client:"ml"},
-  pirelli:    {pass:"PIR2026",   role:"admin",   client:"pirelli"},
+  gerencia:    {pass:"Ops2026",   role:"admin",   client:"admin"},
+  mercadolibre:{pass:"ML2026",    role:"admin",   client:"ml"},
+  pirelli:     {pass:"PIR2026",   role:"admin",   client:"pirelli"},
+  monitorista: {pass:"MON2026",   role:"viewer",  client:"pirelli"},
 };
 
 // CLIENT PROFILES define qué secciones ve cada usuario
@@ -466,16 +474,34 @@ const MONITORISTAS = [
   "JIMENA ORDAZ MUÑOZ","MAYRA EVELYN FERNANDEZ LEONIDEZ",
   "CARMEN ANGELICA ELIZALDE MANRIQUEZ","ANALISTA DE TRANSICION"
 ];
+const SUPERVISORES = ["Oscar","Daniel","Norma"];
+const COORDINADORES = ["Fernando Ramos"];
+const GERENTES = ["Jose Carlos Islas Pintor"];
+const CONVOY_HORARIOS = ["06:00","07:00","08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00","23:00","00:00"];
+const ESTATUS_MONITOREO = [
+  {v:"En embarque",          sub:[]},
+  {v:"En origen",            sub:[]},
+  {v:"Unidad en ruta",       sub:[]},
+  {v:"Unidad detenida",      sub:["Estadía no autorizada","Estadía autorizada"]},
+  {v:"Falla mecánica",       sub:[]},
+  {v:"Desvío",               sub:[]},
+  {v:"Percance",             sub:[]},
+  {v:"Zona de baja cobertura",sub:[]},
+  {v:"Destino",              sub:["Fuera de cliente","Dentro de cliente — GPS retirado"]},
+];
 const OP_COLORS = {
   "Nuevo Laredo":"#DCFCE7;color:#15803D","Altamira":"#E0F2FE;color:#0369A1",
   "Dipro":"#FEF9C3;color:#92400E","Custodia":"#FEE2E2;color:#B91C1C",
   "Manzanillo":"#EDE9FE;color:#7C3AED","Veracruz":"#DCFCE7;color:#166534",
   "San Luis Potosi":"#FEF0E7;color:#C2410C","Puebla":"#F1F5F9;color:#475569"
 };
+const GPS_ESTADO = ["Actualiza","No actualiza"];
 const MON_SHEETS = ["monitoreo1","monitoreo2","monitoreo3"];
-let MON_DATA = [[],[],[]]; // cargado desde Sheets en tiempo real
-let monFilt = {op:"",monitor:"",gps:""};
+let MON_DATA = [[],[],[]];
+let monFilt = {op:"",monitor:"",gps:"",estatus:""};
 let monBusy = false;
+// Timer state: {rowKey -> {ts, timer, alerted}}
+const MON_TIMERS = {};
 
 async function loadMonitoreo(silent=false){
   try{
@@ -489,6 +515,29 @@ async function loadMonitoreo(silent=false){
   }catch(err){
     if(!silent) toast("\u26a0\ufe0f Error cargando monitoreo","err");
   }
+}
+
+// ── TIMER LOGIC ───────────────────────────────────────────────────────────────
+// Returns minutes elapsed since last comment timestamp
+function minSinceComment(r){
+  if(!r.ultimo_monitoreo) return null;
+  try{
+    const ts=new Date(r.ultimo_monitoreo);
+    if(isNaN(ts)) return null;
+    return Math.floor((Date.now()-ts.getTime())/60000);
+  }catch{return null;}
+}
+function timerClass(mins){
+  if(mins===null) return "";
+  if(mins>=25) return "timer-alert";
+  if(mins>=20) return "timer-warn";
+  return "timer-ok";
+}
+function timerLabel(mins){
+  if(mins===null) return "–";
+  if(mins>=25) return "🔴 "+mins+"min";
+  if(mins>=20) return "🟡 "+mins+"min";
+  return "🟢 "+mins+"min";
 }
 
 let DATA=Object.fromEntries(Object.keys(SECS).map(k=>[k,[]]));
@@ -737,22 +786,27 @@ function renderDash(){
 function renderMonitoreo(stIdx){
   const st=["Estación 1","Estación 2","Estación 3"][stIdx];
   const rows=MON_DATA[stIdx];
-  const fOp=monFilt.op, fMon=monFilt.monitor, fGps=monFilt.gps;
+  const fOp=monFilt.op, fMon=monFilt.monitor, fGps=monFilt.gps, fEst=monFilt.estatus;
   const filtered=rows.filter(r=>{
     if(fOp&&r.operacion!==fOp)return false;
     if(fMon&&r.monitorista!==fMon)return false;
-    if(fGps&&r.gps1!==fGps&&r.gps2!==fGps)return false;
+    if(fGps&&r.gps1_estado!==fGps&&r.gps2_estado!==fGps)return false;
+    if(fEst&&r.estatus_monitoreo!==fEst)return false;
     return true;
   });
 
   const opOpts=OPERACIONES.map(o=>`<option value="${o}"${fOp===o?" selected":""}>${o}</option>`).join("");
   const monOpts=MONITORISTAS.map(m=>`<option value="${m}"${fMon===m?" selected":""}>${m}</option>`).join("");
+  const estOpts=ESTATUS_MONITOREO.map(e=>`<option value="${e.v}"${fEst===e.v?" selected":""}>${e.v}</option>`).join("");
+  
+  // Determine if current user is monitorista profile
+  const isMonitorista = CLIENT==="pirelli" && !isAdmin();
+  const canEditMonitoreo = isAdmin() || isMonitorista;
 
-  const gpsTag=(v)=>{
-    if(!v||v==="-")return`<span style="color:var(--muted)">–</span>`;
-    return v==="SI"
-      ?`<span style="background:var(--green-bg);color:var(--green);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">✅ Activo</span>`
-      :`<span style="background:var(--red-bg);color:var(--red);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">❌ No</span>`;
+  const gpsEstadoPill=(estado,id)=>{
+    if(!estado) return`<span style="color:var(--muted);font-size:10px">–</span>`;
+    const ok=estado==="Actualiza";
+    return`<span style="background:${ok?"var(--green-bg)":"var(--red-bg)"};color:${ok?"var(--green)":"var(--red)"};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">${ok?"✅":"❌"} ${estado}</span>`;
   };
 
   const opPill=(op)=>{
@@ -760,33 +814,84 @@ function renderMonitoreo(stIdx){
     return`<span style="background:${c};display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">${op||"–"}</span>`;
   };
 
+  const estatusPill=(r)=>{
+    const v=r.estatus_monitoreo||""; const sub=r.estatus_sub||"";
+    if(!v) return`<span style="color:var(--muted);font-size:10px">–</span>`;
+    const colors={"En embarque":"#E0F2FE;color:#0369A1","En origen":"#F1F5F9;color:#475569","Unidad en ruta":"#DCFCE7;color:#15803D","Unidad detenida":"#FEF9C3;color:#92400E","Falla mecánica":"#FEE2E2;color:#B91C1C","Desvío":"#EDE9FE;color:#7C3AED","Percance":"#FEE2E2;color:#991B1B","Zona de baja cobertura":"#FEF0E7;color:#C2410C","Destino":"#DCFCE7;color:#166534"};
+    const c=colors[v]||"#F1F5F9;color:#475569";
+    const subTag=sub?`<span style="font-size:9px;margin-left:4px;opacity:.8">${sub}</span>`:"";
+    return`<span style="background:${c};display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">${v}${subTag}</span>`;
+  };
+
+  const convoyPill=(r)=>{
+    if(!r.convoy_horario) return`<span style="color:var(--muted);font-size:10px">–</span>`;
+    return`<span style="background:#EDE9FE;color:#7C3AED;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">🚛 Convoy ${r.convoy_horario}</span>`;
+  };
+
   const addBtn=isAdmin()?`<button class="btn-add" onclick="openMonModal(${stIdx})">＋ Agregar</button>`:"";
-  const viewerBar=!isAdmin()?`<div class="viewer-notice">👁️ Modo visualizador — solo lectura</div>`:"";
+  const viewerBar=(!canEditMonitoreo)?`<div class="viewer-notice">👁️ Modo visualizador — solo lectura</div>`:"";
 
-  const gpsOn=filtered.filter(r=>r.gps1==="SI"||r.gps2==="SI").length;
-  const gpsOff=filtered.filter(r=>r.gps1==="NO"||r.gps2==="NO").length;
+  const gpsOn=filtered.filter(r=>r.gps1_estado==="Actualiza"||r.gps2_estado==="Actualiza").length;
+  const gpsOff=filtered.filter(r=>r.gps1_estado==="No actualiza"||r.gps2_estado==="No actualiza").length;
+  const alertas=filtered.filter(r=>{const m=minSinceComment(r);return m!==null&&m>=25;}).length;
 
+  // Build table rows
+  const colCount = isAdmin() ? 16 : 15;
   const tbody=filtered.length===0
-    ?`<tr><td colspan="11" style="text-align:center;padding:28px;color:var(--muted)">🔍 Sin registros. ${isAdmin()?"Agrega el primero.":""}</td></tr>`
+    ?`<tr><td colspan="${colCount}" style="text-align:center;padding:28px;color:var(--muted)">🔍 Sin registros.${isAdmin()?" Agrega el primero.":""}</td></tr>`
     :filtered.map((r,i)=>{
         const ri=MON_DATA[stIdx].indexOf(r);
         const monShort=r.monitorista?(r.monitorista.split(" ").slice(0,2).join(" ")):"–";
-        const actions=isAdmin()?`<td>
-          <div class="actions-cell">
+        const supShort=r.supervisor||"–";
+        const mins=minSinceComment(r);
+        const tc=timerClass(mins);
+        const tl=timerLabel(mins);
+        const rowAlert=tc==="timer-alert"?' style="background:#FFF5F5;"':'';
+        
+        // Comment cell - editable for monitorista/admin
+        const comentCell=canEditMonitoreo
+          ?`<td style="min-width:160px"><div style="display:flex;gap:4px;align-items:flex-start">
+              <textarea class="coment-input" data-st="${stIdx}" data-ri="${ri}" style="flex:1;font-size:11px;padding:4px;border:1px solid var(--border);border-radius:6px;resize:vertical;min-height:38px;font-family:Inter,sans-serif">${r.comentarios||""}</textarea>
+              <button class="btn-action edit" style="padding:3px 6px;font-size:10px" onclick="saveComentario(${stIdx},${ri})">💾</button>
+            </div></td>`
+          :`<td style="font-size:11px;max-width:160px">${r.comentarios||"–"}</td>`;
+
+        // Estatus cell - editable for monitorista/admin
+        const estSubOpts=(ESTATUS_MONITOREO.find(e=>e.v===r.estatus_monitoreo)||{sub:[]}).sub;
+        const estatusCell=canEditMonitoreo
+          ?`<td><div style="display:flex;flex-direction:column;gap:3px">
+              <select class="estatus-mon-sel" data-st="${stIdx}" data-ri="${ri}" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:#fff" onchange="updateEstatusMon(this)">
+                <option value="">–</option>
+                ${ESTATUS_MONITOREO.map(e=>`<option value="${e.v}"${r.estatus_monitoreo===e.v?" selected":""}>${e.v}</option>`).join("")}
+              </select>
+              ${estSubOpts.length?`<select class="estatus-sub-sel" data-st="${stIdx}" data-ri="${ri}" style="font-size:10px;padding:2px 5px;border:1px solid var(--border);border-radius:6px;background:#fff" onchange="updateEstatusSubMon(this)">
+                <option value="">Sub-estatus…</option>
+                ${estSubOpts.map(s=>`<option value="${s}"${r.estatus_sub===s?" selected":""}>${s}</option>`).join("")}
+              </select>`:""}
+            </div></td>`
+          :`<td>${estatusPill(r)}</td>`;
+
+        const actions=isAdmin()?`<td><div class="actions-cell">
             <button class="btn-action edit" onclick="openMonModal(${stIdx},${ri})">✏️</button>
             <button class="btn-action del" onclick="delMonRow(${stIdx},${ri})">🗑️</button>
           </div></td>`:"";
-        return`<tr>
+
+        return`<tr${rowAlert}>
           <td style="color:var(--muted);font-size:11px">${i+1}</td>
-          <td>${r.fecha||"–"}</td>
+          <td style="font-size:11px">${r.fecha||"–"}</td>
           <td>${opPill(r.operacion)}</td>
-          <td>${r.bitacora||"–"}</td>
+          <td style="font-size:11px">${r.bitacora||"–"}</td>
           <td style="font-family:monospace;font-size:11px">${r.placas||"–"}</td>
-          <td>${r.eco||"–"}</td>
-          <td style="font-size:11px" title="${r.transportista||""}">${(r.transportista||"–").substring(0,18)}</td>
-          <td>${gpsTag(r.gps1)}</td>
-          <td>${gpsTag(r.gps2)}</td>
-          <td style="font-size:10px;font-weight:600" title="${r.monitorista||""}">${monShort}</td>
+          <td style="font-size:11px">${r.eco||"–"}</td>
+          <td style="font-size:11px" title="${r.transportista||""}">${(r.transportista||"–").substring(0,16)}</td>
+          <td><div style="font-size:10px;font-weight:600">${r.gps1_id||"–"}</div><div style="margin-top:2px">${gpsEstadoPill(r.gps1_estado)}</div></td>
+          <td><div style="font-size:10px;font-weight:600">${r.gps2_id||"–"}</div><div style="margin-top:2px">${gpsEstadoPill(r.gps2_estado)}</div></td>
+          ${estatusCell}
+          ${comentCell}
+          <td class="${tc}" style="font-size:11px;font-weight:700;white-space:nowrap">${tl}</td>
+          <td style="font-size:10px;color:var(--muted)">${r.ultimo_monitoreo?new Date(r.ultimo_monitoreo).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}):"–"}</td>
+          <td>${convoyPill(r)}</td>
+          <td style="font-size:10px;font-weight:600">${supShort}</td>
           ${actions}
         </tr>`;
       }).join("");
@@ -795,39 +900,81 @@ function renderMonitoreo(stIdx){
   ${viewerBar}
   <div class="page-header">
     <h2>📡 Control de Seguimiento — ${st}</h2>
-    <p>${filtered.length} registros · GPS activo: ${gpsOn} · GPS inactivo: ${gpsOff}</p>
+    <p>${filtered.length} registros · GPS activa: ${gpsOn} · GPS sin actualizar: ${gpsOff}${alertas?` · <span style="color:var(--red);font-weight:700">🔴 ${alertas} alerta${alertas>1?"s":""} de riesgo</span>`:""}</p>
   </div>
   <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr));margin-bottom:14px">
     <div class="kpi-card total"><div class="kpi-label">Registros</div><div class="kpi-value">${filtered.length}</div></div>
-    <div class="kpi-card green"><div class="kpi-label">📡 GPS On</div><div class="kpi-value">${gpsOn}</div></div>
-    <div class="kpi-card red"><div class="kpi-label">📴 GPS Off</div><div class="kpi-value">${gpsOff}</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">Operaciones</div><div class="kpi-value">${new Set(filtered.map(r=>r.operacion).filter(Boolean)).size}</div></div>
+    <div class="kpi-card green"><div class="kpi-label">📡 GPS OK</div><div class="kpi-value">${gpsOn}</div></div>
+    <div class="kpi-card red"><div class="kpi-label">📴 Sin actualizar</div><div class="kpi-value">${gpsOff}</div></div>
+    <div class="kpi-card ${alertas?"red":"blue"}"><div class="kpi-label">🔴 Alertas</div><div class="kpi-value">${alertas}</div></div>
   </div>
   <div class="table-toolbar">
-    <select class="filter-sel" onchange="monFilt.op=this.value;render()">
-      <option value="">Todas las operaciones</option>${opOpts}
-    </select>
-    <select class="filter-sel" onchange="monFilt.monitor=this.value;render()">
-      <option value="">Todos los monitoristas</option>${monOpts}
-    </select>
+    <select class="filter-sel" onchange="monFilt.op=this.value;render()"><option value="">Todas las operaciones</option>${opOpts}</select>
+    <select class="filter-sel" onchange="monFilt.monitor=this.value;render()"><option value="">Todos los monitoristas</option>${monOpts}</select>
     <select class="filter-sel" onchange="monFilt.gps=this.value;render()">
       <option value="">GPS (todos)</option>
-      <option value="SI"${fGps==="SI"?" selected":""}>GPS activo</option>
-      <option value="NO"${fGps==="NO"?" selected":""}>GPS inactivo</option>
+      <option value="Actualiza"${fGps==="Actualiza"?" selected":""}>✅ GPS Actualiza</option>
+      <option value="No actualiza"${fGps==="No actualiza"?" selected":""}>❌ GPS No actualiza</option>
     </select>
+    <select class="filter-sel" onchange="monFilt.estatus=this.value;render()"><option value="">Todos los estatus</option>${estOpts}</select>
     ${addBtn}
   </div>
-  <div class="res-table-wrap">
-    <table class="res-table" style="min-width:780px">
+  <div class="res-table-wrap" style="overflow-x:auto">
+    <table class="res-table" style="min-width:1200px">
       <thead><tr>
         <th>#</th><th>FECHA</th><th>OPERACIÓN</th><th>BITÁCORA</th>
         <th>PLACAS</th><th>ECO</th><th>TRANSPORTISTA</th>
-        <th>GPS 1</th><th>GPS 2</th><th>MONITORISTA</th>
+        <th>GPS 1</th><th>GPS 2</th><th style="min-width:140px">ESTATUS</th>
+        <th style="min-width:180px">COMENTARIOS</th>
+        <th>TEMPORIZADOR</th><th>ÚLT. MONITOREO</th>
+        <th>CONVOY</th><th>SUPERVISOR</th>
         ${isAdmin()?"<th>ACCIONES</th>":""}
       </tr></thead>
       <tbody>${tbody}</tbody>
     </table>
   </div>`;
+}
+
+// ── INLINE EDIT: comentarios y estatus (para monitoristas) ───────────────────
+async function saveComentario(stIdx,recIdx){
+  const ta=document.querySelector(`.coment-input[data-st="${stIdx}"][data-ri="${recIdx}"]`);
+  if(!ta)return;
+  const rec={...MON_DATA[stIdx][recIdx]};
+  rec.comentarios=ta.value;
+  rec.ultimo_monitoreo=new Date().toISOString();
+  sync("busy");
+  try{
+    await apiPost({sheet:MON_SHEETS[stIdx],action:"update",index:recIdx,row:rec});
+    MON_DATA[stIdx][recIdx]=rec;
+    sync("ok"); toast("✅ Comentario guardado","ok");
+    render();
+  }catch(e){ sync("error"); toast("❌ Error al guardar","err"); }
+}
+
+async function updateEstatusMon(sel){
+  const stIdx=parseInt(sel.dataset.st), recIdx=parseInt(sel.dataset.ri);
+  const rec={...MON_DATA[stIdx][recIdx]};
+  rec.estatus_monitoreo=sel.value;
+  rec.estatus_sub=""; // reset sub on parent change
+  sync("busy");
+  try{
+    await apiPost({sheet:MON_SHEETS[stIdx],action:"update",index:recIdx,row:rec});
+    MON_DATA[stIdx][recIdx]=rec;
+    sync("ok"); toast("✅ Estatus actualizado","ok");
+    render();
+  }catch(e){ sync("error"); toast("❌ Error al guardar","err"); }
+}
+
+async function updateEstatusSubMon(sel){
+  const stIdx=parseInt(sel.dataset.st), recIdx=parseInt(sel.dataset.ri);
+  const rec={...MON_DATA[stIdx][recIdx]};
+  rec.estatus_sub=sel.value;
+  sync("busy");
+  try{
+    await apiPost({sheet:MON_SHEETS[stIdx],action:"update",index:recIdx,row:rec});
+    MON_DATA[stIdx][recIdx]=rec;
+    sync("ok"); toast("✅ Sub-estatus actualizado","ok");
+  }catch(e){ sync("error"); toast("❌ Error al guardar","err"); }
 }
 
 function openMonModal(stIdx, recIdx=-1){
@@ -836,6 +983,13 @@ function openMonModal(stIdx, recIdx=-1){
   const title=recIdx>=0?`✏️ Editar registro — Estación ${stIdx+1}`:`➕ Nuevo registro — Estación ${stIdx+1}`;
   const opOpts=OPERACIONES.map(o=>`<option value="${o}"${r.operacion===o?" selected":""}>${o}</option>`).join("");
   const monOpts=MONITORISTAS.map(m=>`<option value="${m}"${r.monitorista===m?" selected":""}>${m}</option>`).join("");
+  const supOpts=SUPERVISORES.map(s=>`<option value="${s}"${r.supervisor===s?" selected":""}>${s}</option>`).join("");
+  const coordOpts=COORDINADORES.map(s=>`<option value="${s}"${r.coordinador===s?" selected":""}>${s}</option>`).join("");
+  const gerOpts=GERENTES.map(s=>`<option value="${s}"${r.gerente===s?" selected":""}>${s}</option>`).join("");
+  const convoyOpts=CONVOY_HORARIOS.map(h=>`<option value="${h}"${r.convoy_horario===h?" selected":""}>${h}</option>`).join("");
+  const gpsEstOpts=GPS_ESTADO.map(g=>`<option value="${g}"${r.gps1_estado===g?" selected":""}>${g}</option>`).join("");
+  const gpsEst2Opts=GPS_ESTADO.map(g=>`<option value="${g}"${r.gps2_estado===g?" selected":""}>${g}</option>`).join("");
+  const estOpts=ESTATUS_MONITOREO.map(e=>`<option value="${e.v}"${r.estatus_monitoreo===e.v?" selected":""}>${e.v}</option>`).join("");
   const dval=r.fecha&&r.fecha.includes("/")?r.fecha.split("/").reverse().join("-"):r.fecha||new Date().toISOString().split("T")[0];
 
   document.getElementById("modalBox").innerHTML=`
@@ -848,18 +1002,66 @@ function openMonModal(stIdx, recIdx=-1){
       <div class="form-group"><label>Placas (Tracto)</label><input id="mf_placas" type="text" placeholder="ABC-1234" value="${r.placas||""}"/></div>
       <div class="form-group"><label>Eco</label><input id="mf_eco" type="text" placeholder="4521" value="${r.eco||""}"/></div>
       <div class="form-group full"><label>Transportista</label><input id="mf_trans" type="text" placeholder="Nombre" value="${r.transportista||""}"/></div>
-      <div class="form-group"><label>GPS 1</label>
-        <select id="mf_gps1"><option value="">–</option><option value="SI"${r.gps1==="SI"?" selected":""}>Activo</option><option value="NO"${r.gps1==="NO"?" selected":""}>Inactivo</option></select></div>
-      <div class="form-group"><label>GPS 2</label>
-        <select id="mf_gps2"><option value="">–</option><option value="SI"${r.gps2==="SI"?" selected":""}>Activo</option><option value="NO"${r.gps2==="NO"?" selected":""}>Inactivo</option></select></div>
+
+      <div class="modal-section-label full">📡 GPS 1</div>
+      <div class="form-group"><label>ID GPS 1</label><input id="mf_gps1id" type="text" placeholder="GPS-001" value="${r.gps1_id||""}"/></div>
+      <div class="form-group"><label>Estado GPS 1</label>
+        <select id="mf_gps1"><option value="">–</option>${gpsEstOpts}</select></div>
+
+      <div class="modal-section-label full">📡 GPS 2</div>
+      <div class="form-group"><label>ID GPS 2</label><input id="mf_gps2id" type="text" placeholder="GPS-002" value="${r.gps2_id||""}"/></div>
+      <div class="form-group"><label>Estado GPS 2</label>
+        <select id="mf_gps2"><option value="">–</option>${gpsEst2Opts}</select></div>
+
+      <div class="modal-section-label full">📊 Estatus de monitoreo</div>
+      <div class="form-group"><label>Estatus</label>
+        <select id="mf_estmon" onchange="onEstMonChange()"><option value="">–</option>${estOpts}</select></div>
+      <div class="form-group" id="mf_sub_wrap" style="display:${r.estatus_sub?"block":"none"}">
+        <label>Sub-estatus</label>
+        <select id="mf_sub"><option value="">Seleccionar…</option></select></div>
+
+      <div class="modal-section-label full">🚛 Convoy</div>
+      <div class="form-group full"><label>¿Es convoy? Selecciona horario (dejar vacío si no aplica)</label>
+        <select id="mf_convoy"><option value="">Sin convoy</option>${convoyOpts}</select></div>
+
+      <div class="modal-section-label full">👥 Personal asignado</div>
+      <div class="form-group"><label>Supervisor</label>
+        <select id="mf_sup"><option value="">–</option>${supOpts}</select></div>
+      <div class="form-group"><label>Coordinador</label>
+        <select id="mf_coord"><option value="">–</option>${coordOpts}</select></div>
+      <div class="form-group"><label>Gerente</label>
+        <select id="mf_ger"><option value="">–</option>${gerOpts}</select></div>
       <div class="form-group full"><label>Monitorista *</label>
         <select id="mf_mon"><option value="">Seleccionar…</option>${monOpts}</select></div>
+
+      <div class="modal-section-label full">💬 Comentarios iniciales</div>
+      <div class="form-group full"><label>Comentarios</label>
+        <textarea id="mf_coment" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:Inter,sans-serif;font-size:13px;resize:vertical;min-height:70px">${r.comentarios||""}</textarea></div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-save" onclick="saveMonRow(${stIdx},${recIdx})">Guardar</button>
+      <button class="btn-save" onclick="saveMonRow(${stIdx},${recIdx})">Guardar en Sheets</button>
     </div>`;
+
+  // Pre-populate sub-estatus options
+  onEstMonChange(r.estatus_sub||"");
   document.getElementById("modalOverlay").classList.add("open");
+}
+
+function onEstMonChange(preselect=""){
+  const sel=document.getElementById("mf_estmon");
+  if(!sel)return;
+  const v=sel.value;
+  const def=ESTATUS_MONITOREO.find(e=>e.v===v)||{sub:[]};
+  const wrap=document.getElementById("mf_sub_wrap");
+  const subSel=document.getElementById("mf_sub");
+  if(def.sub.length){
+    wrap.style.display="block";
+    subSel.innerHTML=`<option value="">Seleccionar…</option>`+def.sub.map(s=>`<option value="${s}"${preselect===s?" selected":""}>${s}</option>`).join("");
+  } else {
+    wrap.style.display="none";
+    subSel.innerHTML="";
+  }
 }
 
 async function saveMonRow(stIdx,recIdx){
@@ -868,32 +1070,35 @@ async function saveMonRow(stIdx,recIdx){
   const mon=document.getElementById("mf_mon").value;
   if(!fecha||!op){toast("⚠️ Fecha y Operación son obligatorios","err");return;}
   const rec={
-    fecha,bitacora:document.getElementById("mf_bit").value,
-    operacion:op,placas:document.getElementById("mf_placas").value,
+    fecha, bitacora:document.getElementById("mf_bit").value,
+    operacion:op, placas:document.getElementById("mf_placas").value,
     eco:document.getElementById("mf_eco").value,
     transportista:document.getElementById("mf_trans").value,
-    gps1:document.getElementById("mf_gps1").value,
-    gps2:document.getElementById("mf_gps2").value,
-    monitorista:mon
+    gps1_id:document.getElementById("mf_gps1id").value,
+    gps1_estado:document.getElementById("mf_gps1").value,
+    gps2_id:document.getElementById("mf_gps2id").value,
+    gps2_estado:document.getElementById("mf_gps2").value,
+    estatus_monitoreo:document.getElementById("mf_estmon").value,
+    estatus_sub:(document.getElementById("mf_sub")||{value:""}).value||"",
+    convoy_horario:document.getElementById("mf_convoy").value,
+    supervisor:document.getElementById("mf_sup").value,
+    coordinador:document.getElementById("mf_coord").value,
+    gerente:document.getElementById("mf_ger").value,
+    monitorista:mon,
+    comentarios:document.getElementById("mf_coment").value,
+    ultimo_monitoreo: (document.getElementById("mf_coment").value&&recIdx<0) ? new Date().toISOString() : (MON_DATA[stIdx][recIdx]||{}).ultimo_monitoreo||""
   };
   const b=document.getElementById("modalBox").querySelector(".btn-save");
   if(b){b.disabled=true;b.textContent="Guardando…";}
-  closeModal();
-  sync("busy");
+  closeModal(); sync("busy");
   try{
     const sheet=MON_SHEETS[stIdx];
-    if(recIdx>=0){
-      await apiPost({sheet,action:"update",index:recIdx,row:rec});
-    } else {
-      await apiPost({sheet,action:"add",row:rec});
-    }
+    if(recIdx>=0){ await apiPost({sheet,action:"update",index:recIdx,row:rec}); }
+    else { await apiPost({sheet,action:"add",row:rec}); }
     sync("ok");
     toast(recIdx>=0?"✅ Registro actualizado":"✅ Registro agregado","ok");
     await loadAll(true);
-  }catch(e){
-    sync("error");
-    toast("❌ Error al guardar en Sheets","err");
-  }
+  }catch(e){ sync("error"); toast("❌ Error al guardar en Sheets","err"); }
 }
 
 async function delMonRow(stIdx,recIdx){
@@ -902,14 +1107,14 @@ async function delMonRow(stIdx,recIdx){
   sync("busy");
   try{
     await apiPost({sheet:MON_SHEETS[stIdx],action:"delete",index:recIdx});
-    sync("ok");
-    toast("🗑️ Registro eliminado","ok");
+    sync("ok"); toast("🗑️ Registro eliminado","ok");
     await loadAll(true);
-  }catch(e){
-    sync("error");
-    toast("❌ Error al eliminar","err");
-  }
+  }catch(e){ sync("error"); toast("❌ Error al eliminar","err"); }
 }
+
+// ── TIMER TICK (re-renders timer cells every 60s without full reload) ─────────
+setInterval(()=>{ if(page&&page.startsWith("monitoreo")) render(); }, 60000);
+
 
 // ── SECTION ───────────────────────────────────────────────────────────────────
 function renderSec(sec){
