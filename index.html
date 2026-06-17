@@ -202,6 +202,14 @@
   .empty-state .ei{font-size:36px;margin-bottom:10px;}
   .viewer-notice{background:var(--blue-bg);color:var(--blue);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;margin-bottom:14px;}
 
+  .client-card{background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s;}
+  .client-card:hover{border-color:var(--cyan);background:#F0FBFF;}
+  .client-card.selected{border-color:var(--cyan);background:#E0F7FF;box-shadow:0 0 0 3px rgba(0,194,255,.15);}
+  .client-icon{font-size:22px;margin-bottom:4px;}
+  .client-name{font-size:11px;font-weight:700;color:var(--navy);}
+  .client-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+  .dash-client-header{font-size:13px;font-weight:700;color:var(--navy);padding:8px 12px;background:var(--navy2);color:#fff;border-radius:var(--radius);margin:0 0 14px;display:flex;align-items:center;gap:8px;}
+
   @media(max-width:480px){.form-grid{grid-template-columns:1fr;}}
   @media print{.topbar,.sidebar,.table-toolbar,.btn-action,.modal-overlay,.loading-overlay,.menu-toggle,.login-screen,.viewer-notice{display:none !important;}.layout{display:block;}.main{padding:8px;overflow:visible;}}
 </style>
@@ -213,9 +221,28 @@
   <div class="login-box">
     <div class="login-logo">
       <span class="badge">OPS</span>
-      <h2>Inventario Operacional</h2>
-      <p>Acceso al sistema de control de recursos</p>
+      <h2>AI27 — Sistema Operacional</h2>
+      <p>Control de Inventario &amp; Centro de Monitoreo</p>
     </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:18px;">
+      <div class="client-card" id="cc-admin" onclick="selectClient('admin')" title="Acceso total al sistema">
+        <div class="client-icon">🔑</div>
+        <div class="client-name">Administrador</div>
+        <div class="client-sub">Acceso total</div>
+      </div>
+      <div class="client-card" id="cc-ml" onclick="selectClient('ml')" title="Inventario Operacional">
+        <div class="client-icon">🏪</div>
+        <div class="client-name">Mercado Libre</div>
+        <div class="client-sub">Inventario</div>
+      </div>
+      <div class="client-card" id="cc-pirelli" onclick="selectClient('pirelli')" title="Centro de Monitoreo">
+        <div class="client-icon">📡</div>
+        <div class="client-name">Pirelli</div>
+        <div class="client-sub">Monitoreo</div>
+      </div>
+    </div>
+
     <div class="login-field">
       <label>Usuario</label>
       <input type="text" id="loginUser" placeholder="usuario" autocomplete="username"/>
@@ -224,7 +251,7 @@
       <label>Contraseña</label>
       <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"/>
     </div>
-    <button class="btn-login" onclick="doLogin()">Ingresar como Administrador</button>
+    <button class="btn-login" onclick="doLogin()">Ingresar</button>
     <div class="login-error" id="loginError">Usuario o contraseña incorrectos</div>
     <button class="btn-viewer" onclick="enterViewer()">👁️ Entrar como Visualizador</button>
   </div>
@@ -240,7 +267,7 @@
 <div class="topbar">
   <div class="topbar-brand">
     <span class="badge">OPS</span>
-    <h1>Inventario Operacional</h1>
+    <h1 id="topbarTitle">AI27 — Sistema Operacional</h1>
   </div>
   <div class="topbar-right">
     <div class="sync-pill"><div class="sync-dot" id="syncDot"></div><span id="syncLbl">Conectado</span></div>
@@ -256,12 +283,18 @@
     <div class="menu-toggle" onclick="toggleSidebar()">☰</div>
     <div class="nav-item active" onclick="go('dashboard')" data-p="dashboard"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></div>
     <div class="sidebar-sep"></div>
-    <div class="nav-item" onclick="go('motos')" data-p="motos"><span class="nav-icon">🏍️</span><span class="nav-label">Motos</span><span class="nav-badge" id="nb-motos">–</span></div>
-    <div class="nav-item" onclick="go('patrullas')" data-p="patrullas"><span class="nav-icon">🚓</span><span class="nav-label">Patrullas</span><span class="nav-badge" id="nb-patrullas">–</span></div>
-    <div class="nav-item" onclick="go('gps')" data-p="gps"><span class="nav-icon">📡</span><span class="nav-label">GPS</span><span class="nav-badge" id="nb-gps">–</span></div>
-    <div class="nav-item" onclick="go('equipos')" data-p="equipos"><span class="nav-icon">💻</span><span class="nav-label">Equipos</span><span class="nav-badge" id="nb-equipos">–</span></div>
-    <div class="nav-item" onclick="go('comunicacion')" data-p="comunicacion"><span class="nav-icon">📻</span><span class="nav-label">Comunicación</span><span class="nav-badge" id="nb-comunicacion">–</span></div>
-    <div class="nav-item" onclick="go('reasignacion')" data-p="reasignacion"><span class="nav-icon">👮</span><span class="nav-label">Reasignación</span><span class="nav-badge" id="nb-reasignacion">–</span></div>
+    <!-- ML: Inventario -->
+    <div class="nav-item nav-ml" onclick="go('motos')" data-p="motos"><span class="nav-icon">🏍️</span><span class="nav-label">Motos</span><span class="nav-badge" id="nb-motos">–</span></div>
+    <div class="nav-item nav-ml" onclick="go('patrullas')" data-p="patrullas"><span class="nav-icon">🚓</span><span class="nav-label">Patrullas</span><span class="nav-badge" id="nb-patrullas">–</span></div>
+    <div class="nav-item nav-ml" onclick="go('gps')" data-p="gps"><span class="nav-icon">📡</span><span class="nav-label">GPS</span><span class="nav-badge" id="nb-gps">–</span></div>
+    <div class="nav-item nav-ml" onclick="go('equipos')" data-p="equipos"><span class="nav-icon">💻</span><span class="nav-label">Equipos</span><span class="nav-badge" id="nb-equipos">–</span></div>
+    <div class="nav-item nav-ml" onclick="go('comunicacion')" data-p="comunicacion"><span class="nav-icon">📻</span><span class="nav-label">Comunicación</span><span class="nav-badge" id="nb-comunicacion">–</span></div>
+    <div class="nav-item nav-ml" onclick="go('reasignacion')" data-p="reasignacion"><span class="nav-icon">👮</span><span class="nav-label">Reasignación</span><span class="nav-badge" id="nb-reasignacion">–</span></div>
+    <!-- Pirelli: Monitoreo -->
+    <div class="sidebar-sep nav-pirelli"></div>
+    <div class="nav-item nav-pirelli" onclick="go('monitoreo1')" data-p="monitoreo1"><span class="nav-icon">📡</span><span class="nav-label">Estación 1</span><span class="nav-badge" id="nb-mon1">–</span></div>
+    <div class="nav-item nav-pirelli" onclick="go('monitoreo2')" data-p="monitoreo2"><span class="nav-icon">📡</span><span class="nav-label">Estación 2</span><span class="nav-badge" id="nb-mon2">–</span></div>
+    <div class="nav-item nav-pirelli" onclick="go('monitoreo3')" data-p="monitoreo3"><span class="nav-icon">📡</span><span class="nav-label">Estación 3</span><span class="nav-badge" id="nb-mon3">–</span></div>
   </nav>
   <main class="main" id="mainContent"></main>
 </div>
@@ -270,28 +303,73 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ── AUTH ──────────────────────────────────────────────────────────────────────
-const USERS = {gerencia:{pass:"Ops2026",role:"admin"}};
+// ── AUTH & CLIENT PROFILES ────────────────────────────────────────────────────
+const USERS = {
+  gerencia:   {pass:"Ops2026",   role:"admin",   client:"admin"},
+  mercadolibre:{pass:"ML2026",   role:"admin",   client:"ml"},
+  pirelli:    {pass:"PIR2026",   role:"admin",   client:"pirelli"},
+};
+
+// CLIENT PROFILES define qué secciones ve cada usuario
+const CLIENT_PROFILES = {
+  admin:   {label:"Administrador", icon:"🔑",  modules:["ml","pirelli"], badge:"admin"},
+  ml:      {label:"Mercado Libre", icon:"🏪",  modules:["ml"],           badge:"viewer"},
+  pirelli: {label:"Pirelli",       icon:"📡",  modules:["pirelli"],      badge:"viewer"},
+};
+
 let ROLE = null;
+let CLIENT = null;  // "admin" | "ml" | "pirelli"
+let SELECTED_CLIENT = "admin"; // default card selected in login
+
+function selectClient(c){
+  SELECTED_CLIENT = c;
+  document.querySelectorAll(".client-card").forEach(el=>el.classList.remove("selected"));
+  document.getElementById("cc-"+c).classList.add("selected");
+}
 
 function doLogin(){
-  const u=document.getElementById("loginUser").value.trim();
+  const u=document.getElementById("loginUser").value.trim().toLowerCase();
   const p=document.getElementById("loginPass").value;
   const err=document.getElementById("loginError");
-  if(USERS[u]&&USERS[u].pass===p){
-    ROLE=USERS[u].role;
-    sessionStorage.setItem("inv_role","admin");
+  const user=USERS[u];
+  if(user && user.pass===p){
+    ROLE=user.role;
+    CLIENT=user.client;
+    sessionStorage.setItem("inv_role", ROLE);
+    sessionStorage.setItem("inv_client", CLIENT);
     startApp();
   } else {
     err.classList.add("show");
     setTimeout(()=>err.classList.remove("show"),3000);
   }
 }
-function enterViewer(){ ROLE="viewer"; sessionStorage.setItem("inv_role","viewer"); startApp(); }
-function logout(){ sessionStorage.clear(); ROLE=null; document.getElementById("loginScreen").classList.remove("hidden"); document.getElementById("loginUser").value=""; document.getElementById("loginPass").value=""; }
+
+function enterViewer(){
+  ROLE="viewer";
+  CLIENT=SELECTED_CLIENT;
+  sessionStorage.setItem("inv_role","viewer");
+  sessionStorage.setItem("inv_client", CLIENT);
+  startApp();
+}
+
+function logout(){
+  sessionStorage.clear();
+  ROLE=null; CLIENT=null;
+  document.getElementById("loginScreen").classList.remove("hidden");
+  document.getElementById("loginUser").value="";
+  document.getElementById("loginPass").value="";
+}
+
 function isAdmin(){ return ROLE==="admin"; }
+function hasModule(m){ 
+  if(!CLIENT) return false;
+  return CLIENT_PROFILES[CLIENT]?.modules.includes(m);
+}
+
 document.getElementById("loginPass").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
 document.getElementById("loginUser").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("loginPass").focus();});
+// Pre-select admin card by default
+document.getElementById("cc-admin").classList.add("selected");
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const API="https://script.google.com/macros/s/AKfycbx3R5dioJ8ZgCHz6PxFEO1fP1nUtQWhMHkxLfKqfHAfykRAUf9ITHdGohwyks8L7ATDBA/exec";
@@ -379,6 +457,30 @@ const SECS={
 const STS  = ["ENTREGADO","PENDIENTE","EN PROCESO","BAJA/FALLA"];
 const SICO = {"ENTREGADO":"✅","PENDIENTE":"⏳","EN PROCESO":"🔄","BAJA/FALLA":"❌"};
 const SCSS = {"ENTREGADO":"s-E","PENDIENTE":"s-P","EN PROCESO":"s-N","BAJA/FALLA":"s-B"};
+
+// ── MONITOREO DATA ─────────────────────────────────────────────────────────────
+const OPERACIONES = ["Nuevo Laredo","Altamira","Dipro","Custodia","Manzanillo","Veracruz","San Luis Potosi","Puebla"];
+const MONITORISTAS = [
+  "ROGELIO ROSAS SUAREZ","ALAN FERNANDO FLORES QUINTERO","JUAN MANUEL OSORIO CORONA",
+  "JIMENA ORDAZ MUÑOZ","MAYRA EVELYN FERNANDEZ LEONIDEZ",
+  "CARMEN ANGELICA ELIZALDE MANRIQUEZ","ANALISTA DE TRANSICION"
+];
+const OP_COLORS = {
+  "Nuevo Laredo":"#DCFCE7;color:#15803D","Altamira":"#E0F2FE;color:#0369A1",
+  "Dipro":"#FEF9C3;color:#92400E","Custodia":"#FEE2E2;color:#B91C1C",
+  "Manzanillo":"#EDE9FE;color:#7C3AED","Veracruz":"#DCFCE7;color:#166534",
+  "San Luis Potosi":"#FEF0E7;color:#C2410C","Puebla":"#F1F5F9;color:#475569"
+};
+const MON_KEY = "mon_ai27_v1";
+let MON_DATA = [[],[],[]]; // 3 estaciones
+let monModal = {stIdx:0, recIdx:-1};
+let monFilt = {op:"",monitor:"",gps:""};
+
+function monLoad(){
+  try{ const d=localStorage.getItem(MON_KEY); if(d) MON_DATA=JSON.parse(d); }catch(e){}
+}
+function monSave(){ localStorage.setItem(MON_KEY,JSON.stringify(MON_DATA)); }
+monLoad();
 
 let DATA=Object.fromEntries(Object.keys(SECS).map(k=>[k,[]]));
 let page="dashboard",srch="",filt="TODOS",filtSub="TODOS",busy=false,sideOpen=false;
@@ -474,6 +576,13 @@ function updateBadges(){
     el.textContent=`${s.e}/${s.total}`;
     el.className="nav-badge"+(s.p+s.n>0?" warn":"");
   });
+  // monitoreo badges
+  [0,1,2].forEach(i=>{
+    const el=document.getElementById("nb-mon"+(i+1));
+    if(!el)return;
+    el.textContent=MON_DATA[i].length;
+    el.className="nav-badge";
+  });
 }
 
 // ── NAVIGATE ──────────────────────────────────────────────────────────────────
@@ -486,102 +595,280 @@ function go(p){
 }
 function render(){
   updateBadges();
-  document.getElementById("mainContent").innerHTML=page==="dashboard"?renderDash():renderSec(page);
-  if(page!=="dashboard") bindSelects();
+  let html="";
+  if(page==="dashboard") html=renderDash();
+  else if(page==="monitoreo1") html=renderMonitoreo(0);
+  else if(page==="monitoreo2") html=renderMonitoreo(1);
+  else if(page==="monitoreo3") html=renderMonitoreo(2);
+  else html=renderSec(page);
+  document.getElementById("mainContent").innerHTML=html;
+  if(page!=="dashboard"&&!page.startsWith("monitoreo")) bindSelects();
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 function renderDash(){
-  let T=0,E=0,P=0,N=0,B=0;
-  Object.keys(SECS).forEach(sec=>{const s=stats(sec);T+=s.total;E+=s.e;P+=s.p;N+=s.n;B+=s.b;});
-  const pct=T>0?Math.round(E/T*100):0;
-  const gsub=globalSubStats();
+  const hasMl     = CLIENT==="admin" || CLIENT==="ml";
+  const hasPirelli= CLIENT==="admin" || CLIENT==="pirelli";
 
-  // Main category table
-  const catRows=Object.entries(SECS).map(([k,sec])=>{
-    const s=stats(k),p=s.total>0?Math.round(s.e/s.total*100):0;
-    return`<tr onclick="go('${k}')">
-      <td><span class="cat-name">${sec.icon} ${sec.label}</span></td>
-      <td style="font-weight:700">${s.total}</td>
-      <td style="color:var(--green);font-weight:700">${s.e}</td>
-      <td style="color:#D97706;font-weight:700">${s.p}</td>
-      <td style="color:var(--blue);font-weight:700">${s.n}</td>
-      <td style="color:var(--red);font-weight:700">${s.b}</td>
-      <td><div style="display:flex;align-items:center;gap:6px">
-        <div class="mini-bar"><div class="mini-fill" style="width:${p}%"></div></div>
-        <span class="pct-lbl">${p}%</span>
-      </div></td>
-    </tr>`;
-  }).join("");
+  let mlSection="", pirSection="";
 
-  // Subclassification summary table
-  const subDefs=[
-    {k:"NO_ENTREGA", lb:"Elemento no entrega recurso", icon:"🚫", css:"sub-1", col:"#C2410C"},
-    {k:"LABORATORIO",lb:"Equipo ingresa a laboratorio", icon:"🔬", css:"sub-2", col:"#7C3AED"},
-    {k:"INACTIVA",   lb:"Unidad inactiva",              icon:"💤", css:"sub-3", col:"#92400E"},
-    {k:"RECUPERACION",lb:"En proceso de recuperación",  icon:"🔄", css:"sub-4", col:"#0369A1"},
-  ];
+  if(hasMl){
+    let T=0,E=0,P=0,N=0,B=0;
+    Object.keys(SECS).forEach(sec=>{const s=stats(sec);T+=s.total;E+=s.e;P+=s.p;N+=s.n;B+=s.b;});
+    const pct=T>0?Math.round(E/T*100):0;
+    const gsub=globalSubStats();
 
-  // Per-category subclass breakdown
-  const subCatRows=Object.entries(SECS).map(([k,sec])=>{
-    const s=stats(k);
-    const subCells=subDefs.map(sd=>`<td style="text-align:center;font-weight:700;color:${sd.col}">${s.sub[sd.k]||0}</td>`).join("");
-    return`<tr onclick="go('${k}')">
-      <td><span class="cat-name" style="font-size:11px">${sec.icon} ${sec.label}</span></td>
-      ${subCells}
-    </tr>`;
-  }).join("");
+    const catRows=Object.entries(SECS).map(([k,sec])=>{
+      const s=stats(k),p=s.total>0?Math.round(s.e/s.total*100):0;
+      return`<tr onclick="go('${k}')">
+        <td><span class="cat-name">${sec.icon} ${sec.label}</span></td>
+        <td style="font-weight:700">${s.total}</td>
+        <td style="color:var(--green);font-weight:700">${s.e}</td>
+        <td style="color:#D97706;font-weight:700">${s.p}</td>
+        <td style="color:var(--blue);font-weight:700">${s.n}</td>
+        <td style="color:var(--red);font-weight:700">${s.b}</td>
+        <td><div style="display:flex;align-items:center;gap:6px">
+          <div class="mini-bar"><div class="mini-fill" style="width:${p}%"></div></div>
+          <span class="pct-lbl">${p}%</span>
+        </div></td>
+      </tr>`;
+    }).join("");
 
-  const subTotals=subDefs.map(sd=>`<td style="text-align:center;font-weight:800;color:${sd.col};font-size:14px">${gsub[sd.k]||0}</td>`).join("");
+    const subDefs=[
+      {k:"NO_ENTREGA", lb:"No entrega", icon:"🚫", col:"#C2410C"},
+      {k:"LABORATORIO",lb:"Laboratorio", icon:"🔬", col:"#7C3AED"},
+      {k:"INACTIVA",   lb:"Inactiva",  icon:"💤", col:"#92400E"},
+      {k:"RECUPERACION",lb:"Recuperación",icon:"🔄", col:"#0369A1"},
+    ];
+
+    mlSection=`
+    <div class="dash-client-header">🏪 Mercado Libre — Inventario Operacional</div>
+    <div class="kpi-grid">
+      <div class="kpi-card total"><div class="kpi-label">Total</div><div class="kpi-value">${T}</div><div class="kpi-sub">registros</div></div>
+      <div class="kpi-card green"><div class="kpi-label">✅ Entregado</div><div class="kpi-value">${E}</div><div class="kpi-sub">${pct}%</div></div>
+      <div class="kpi-card yellow"><div class="kpi-label">⏳ Pendiente</div><div class="kpi-value">${P}</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">🔄 En Proceso</div><div class="kpi-value">${N}</div></div>
+      <div class="kpi-card red"><div class="kpi-label">❌ Baja/Falla</div><div class="kpi-value">${B}</div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-header"><span class="progress-title">Avance General de Entrega</span><span class="progress-pct">${pct}%</span></div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="section-title">Estatus por categoría</div>
+    <div class="dash-table-wrap">
+      <table class="dash-table">
+        <thead><tr><th>CATEGORÍA</th><th>TOTAL</th><th>✅</th><th>⏳</th><th>🔄</th><th>❌</th><th>AVANCE</th></tr></thead>
+        <tbody>${catRows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  if(hasPirelli){
+    let monTotal=0, monGpsOn=0, monGpsOff=0;
+    const opCount={};
+    MON_DATA.forEach(st=>st.forEach(r=>{
+      monTotal++;
+      if(r.gps1==="SI"||r.gps2==="SI") monGpsOn++;
+      if(r.gps1==="NO"||r.gps2==="NO") monGpsOff++;
+      if(r.operacion) opCount[r.operacion]=(opCount[r.operacion]||0)+1;
+    }));
+
+    const stRows=[0,1,2].map(i=>{
+      const n=MON_DATA[i].length;
+      return`<tr onclick="go('monitoreo${i+1}')">
+        <td><span class="cat-name">📡 Estación ${i+1}</span></td>
+        <td style="font-weight:700">${n}</td>
+        <td style="color:var(--green);font-weight:700">${MON_DATA[i].filter(r=>r.gps1==="SI"||r.gps2==="SI").length}</td>
+        <td style="color:var(--red);font-weight:700">${MON_DATA[i].filter(r=>r.gps1==="NO"||r.gps2==="NO").length}</td>
+      </tr>`;
+    }).join("");
+
+    const opRows=OPERACIONES.filter(o=>opCount[o]).map(o=>`
+      <tr><td><span style="background:${OP_COLORS[o]};display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">${o}</span></td>
+      <td style="font-weight:700">${opCount[o]||0}</td></tr>`).join("");
+
+    pirSection=`
+    ${CLIENT==="admin"?'<div style="height:1px;background:var(--border);margin:24px 0"></div>':""}
+    <div class="dash-client-header">📡 Pirelli — Centro de Monitoreo AI27</div>
+    <div class="kpi-grid">
+      <div class="kpi-card total"><div class="kpi-label">Registros totales</div><div class="kpi-value">${monTotal}</div></div>
+      <div class="kpi-card green"><div class="kpi-label">📡 GPS Activo</div><div class="kpi-value">${monGpsOn}</div></div>
+      <div class="kpi-card red"><div class="kpi-label">📴 GPS Inactivo</div><div class="kpi-value">${monGpsOff}</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Estaciones</div><div class="kpi-value">3</div></div>
+    </div>
+    <div class="section-title">Registros por estación</div>
+    <div class="dash-table-wrap">
+      <table class="dash-table">
+        <thead><tr><th>ESTACIÓN</th><th>TOTAL</th><th>GPS ✅</th><th>GPS ❌</th></tr></thead>
+        <tbody>${stRows}</tbody>
+      </table>
+    </div>
+    ${opRows?`<div class="section-title">Operaciones registradas</div>
+    <div class="dash-table-wrap"><table class="dash-table">
+      <thead><tr><th>OPERACIÓN</th><th>REGISTROS</th></tr></thead>
+      <tbody>${opRows}</tbody></table></div>`:""}`;
+  }
+
+  return`<div class="page-header"><h2>📊 Panel Ejecutivo</h2><p>Datos en tiempo real · ${CLIENT==="admin"?"Vista completa":CLIENT==="ml"?"Mercado Libre":"Pirelli"}</p></div>
+  ${mlSection}${pirSection}`;
+}
+
+// ── MONITOREO RENDER ──────────────────────────────────────────────────────────
+function renderMonitoreo(stIdx){
+  const st=["Estación 1","Estación 2","Estación 3"][stIdx];
+  const rows=MON_DATA[stIdx];
+  const fOp=monFilt.op, fMon=monFilt.monitor, fGps=monFilt.gps;
+  const filtered=rows.filter(r=>{
+    if(fOp&&r.operacion!==fOp)return false;
+    if(fMon&&r.monitorista!==fMon)return false;
+    if(fGps&&r.gps1!==fGps&&r.gps2!==fGps)return false;
+    return true;
+  });
+
+  const opOpts=OPERACIONES.map(o=>`<option value="${o}"${fOp===o?" selected":""}>${o}</option>`).join("");
+  const monOpts=MONITORISTAS.map(m=>`<option value="${m}"${fMon===m?" selected":""}>${m}</option>`).join("");
+
+  const gpsTag=(v)=>{
+    if(!v||v==="-")return`<span style="color:var(--muted)">–</span>`;
+    return v==="SI"
+      ?`<span style="background:var(--green-bg);color:var(--green);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">✅ Activo</span>`
+      :`<span style="background:var(--red-bg);color:var(--red);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">❌ No</span>`;
+  };
+
+  const opPill=(op)=>{
+    const c=OP_COLORS[op]||"#F1F5F9;color:#475569";
+    return`<span style="background:${c};display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">${op||"–"}</span>`;
+  };
+
+  const addBtn=isAdmin()?`<button class="btn-add" onclick="openMonModal(${stIdx})">＋ Agregar</button>`:"";
+  const viewerBar=!isAdmin()?`<div class="viewer-notice">👁️ Modo visualizador — solo lectura</div>`:"";
+
+  const gpsOn=filtered.filter(r=>r.gps1==="SI"||r.gps2==="SI").length;
+  const gpsOff=filtered.filter(r=>r.gps1==="NO"||r.gps2==="NO").length;
+
+  const tbody=filtered.length===0
+    ?`<tr><td colspan="11" style="text-align:center;padding:28px;color:var(--muted)">🔍 Sin registros. ${isAdmin()?"Agrega el primero.":""}</td></tr>`
+    :filtered.map((r,i)=>{
+        const ri=MON_DATA[stIdx].indexOf(r);
+        const monShort=r.monitorista?(r.monitorista.split(" ").slice(0,2).join(" ")):"–";
+        const actions=isAdmin()?`<td>
+          <div class="actions-cell">
+            <button class="btn-action edit" onclick="openMonModal(${stIdx},${ri})">✏️</button>
+            <button class="btn-action del" onclick="delMonRow(${stIdx},${ri})">🗑️</button>
+          </div></td>`:"";
+        return`<tr>
+          <td style="color:var(--muted);font-size:11px">${i+1}</td>
+          <td>${r.fecha||"–"}</td>
+          <td>${opPill(r.operacion)}</td>
+          <td>${r.bitacora||"–"}</td>
+          <td style="font-family:monospace;font-size:11px">${r.placas||"–"}</td>
+          <td>${r.eco||"–"}</td>
+          <td style="font-size:11px" title="${r.transportista||""}">${(r.transportista||"–").substring(0,18)}</td>
+          <td>${gpsTag(r.gps1)}</td>
+          <td>${gpsTag(r.gps2)}</td>
+          <td style="font-size:10px;font-weight:600" title="${r.monitorista||""}">${monShort}</td>
+          ${actions}
+        </tr>`;
+      }).join("");
 
   return`
-  <div class="page-header"><h2>📊 Panel Ejecutivo</h2><p>Datos en tiempo real · Google Sheets</p></div>
-
-  <div class="kpi-grid">
-    <div class="kpi-card total"><div class="kpi-label">Total</div><div class="kpi-value">${T}</div><div class="kpi-sub">registros</div></div>
-    <div class="kpi-card green"><div class="kpi-label">✅ Entregado</div><div class="kpi-value">${E}</div><div class="kpi-sub">${pct}%</div></div>
-    <div class="kpi-card yellow"><div class="kpi-label">⏳ Pendiente</div><div class="kpi-value">${P}</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">🔄 En Proceso</div><div class="kpi-value">${N}</div></div>
-    <div class="kpi-card red"><div class="kpi-label">❌ Baja/Falla</div><div class="kpi-value">${B}</div></div>
+  ${viewerBar}
+  <div class="page-header">
+    <h2>📡 Control de Seguimiento — ${st}</h2>
+    <p>${filtered.length} registros · GPS activo: ${gpsOn} · GPS inactivo: ${gpsOff}</p>
   </div>
-
-  <div class="progress-wrap">
-    <div class="progress-header"><span class="progress-title">Avance General de Entrega</span><span class="progress-pct">${pct}%</span></div>
-    <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr));margin-bottom:14px">
+    <div class="kpi-card total"><div class="kpi-label">Registros</div><div class="kpi-value">${filtered.length}</div></div>
+    <div class="kpi-card green"><div class="kpi-label">📡 GPS On</div><div class="kpi-value">${gpsOn}</div></div>
+    <div class="kpi-card red"><div class="kpi-label">📴 GPS Off</div><div class="kpi-value">${gpsOff}</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">Operaciones</div><div class="kpi-value">${new Set(filtered.map(r=>r.operacion).filter(Boolean)).size}</div></div>
   </div>
-
-  <div class="section-title">Estatus por categoría</div>
-  <div class="dash-table-wrap">
-    <table class="dash-table">
-      <thead><tr><th>CATEGORÍA</th><th>TOTAL</th><th>✅</th><th>⏳</th><th>🔄</th><th>❌</th><th>AVANCE</th></tr></thead>
-      <tbody>${catRows}</tbody>
-    </table>
+  <div class="table-toolbar">
+    <select class="filter-sel" onchange="monFilt.op=this.value;render()">
+      <option value="">Todas las operaciones</option>${opOpts}
+    </select>
+    <select class="filter-sel" onchange="monFilt.monitor=this.value;render()">
+      <option value="">Todos los monitoristas</option>${monOpts}
+    </select>
+    <select class="filter-sel" onchange="monFilt.gps=this.value;render()">
+      <option value="">GPS (todos)</option>
+      <option value="SI"${fGps==="SI"?" selected":""}>GPS activo</option>
+      <option value="NO"${fGps==="NO"?" selected":""}>GPS inactivo</option>
+    </select>
+    ${addBtn}
   </div>
-
-  <div class="section-title">Clasificación por categoría</div>
-  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
-    ${subDefs.map(sd=>`
-    <div class="kpi-card" style="border-top-color:${sd.col}">
-      <div class="kpi-label">${sd.icon} ${sd.lb}</div>
-      <div class="kpi-value" style="color:${sd.col}">${gsub[sd.k]||0}</div>
-      <div class="kpi-sub">total registros</div>
-    </div>`).join("")}
-  </div>
-  <div class="sub-table-wrap">
-    <table class="sub-table">
+  <div class="res-table-wrap">
+    <table class="res-table" style="min-width:780px">
       <thead><tr>
-        <th>CATEGORÍA</th>
-        ${subDefs.map(sd=>`<th style="text-align:center">${sd.icon} ${sd.lb}</th>`).join("")}
+        <th>#</th><th>FECHA</th><th>OPERACIÓN</th><th>BITÁCORA</th>
+        <th>PLACAS</th><th>ECO</th><th>TRANSPORTISTA</th>
+        <th>GPS 1</th><th>GPS 2</th><th>MONITORISTA</th>
+        ${isAdmin()?"<th>ACCIONES</th>":""}
       </tr></thead>
-      <tbody>
-        ${subCatRows}
-        <tr style="background:var(--navy);color:#fff">
-          <td style="font-weight:700;color:#fff">TOTALES</td>
-          ${subTotals}
-        </tr>
-      </tbody>
+      <tbody>${tbody}</tbody>
     </table>
   </div>`;
+}
+
+function openMonModal(stIdx, recIdx=-1){
+  if(!isAdmin())return;
+  const r=recIdx>=0?MON_DATA[stIdx][recIdx]:{};
+  const title=recIdx>=0?`✏️ Editar registro — Estación ${stIdx+1}`:`➕ Nuevo registro — Estación ${stIdx+1}`;
+  const opOpts=OPERACIONES.map(o=>`<option value="${o}"${r.operacion===o?" selected":""}>${o}</option>`).join("");
+  const monOpts=MONITORISTAS.map(m=>`<option value="${m}"${r.monitorista===m?" selected":""}>${m}</option>`).join("");
+  const dval=r.fecha&&r.fecha.includes("/")?r.fecha.split("/").reverse().join("-"):r.fecha||new Date().toISOString().split("T")[0];
+
+  document.getElementById("modalBox").innerHTML=`
+    <h3>${title}</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Fecha *</label><input id="mf_fecha" type="date" value="${dval}"/></div>
+      <div class="form-group"><label>Bitácora</label><input id="mf_bit" type="text" placeholder="BIT-001" value="${r.bitacora||""}"/></div>
+      <div class="form-group full"><label>Operación *</label>
+        <select id="mf_op"><option value="">Seleccionar…</option>${opOpts}</select></div>
+      <div class="form-group"><label>Placas (Tracto)</label><input id="mf_placas" type="text" placeholder="ABC-1234" value="${r.placas||""}"/></div>
+      <div class="form-group"><label>Eco</label><input id="mf_eco" type="text" placeholder="4521" value="${r.eco||""}"/></div>
+      <div class="form-group full"><label>Transportista</label><input id="mf_trans" type="text" placeholder="Nombre" value="${r.transportista||""}"/></div>
+      <div class="form-group"><label>GPS 1</label>
+        <select id="mf_gps1"><option value="">–</option><option value="SI"${r.gps1==="SI"?" selected":""}>Activo</option><option value="NO"${r.gps1==="NO"?" selected":""}>Inactivo</option></select></div>
+      <div class="form-group"><label>GPS 2</label>
+        <select id="mf_gps2"><option value="">–</option><option value="SI"${r.gps2==="SI"?" selected":""}>Activo</option><option value="NO"${r.gps2==="NO"?" selected":""}>Inactivo</option></select></div>
+      <div class="form-group full"><label>Monitorista *</label>
+        <select id="mf_mon"><option value="">Seleccionar…</option>${monOpts}</select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveMonRow(${stIdx},${recIdx})">Guardar</button>
+    </div>`;
+  document.getElementById("modalOverlay").classList.add("open");
+}
+
+function saveMonRow(stIdx,recIdx){
+  const fecha=document.getElementById("mf_fecha").value;
+  const op=document.getElementById("mf_op").value;
+  const mon=document.getElementById("mf_mon").value;
+  if(!fecha||!op){toast("⚠️ Fecha y Operación son obligatorios","err");return;}
+  const rec={
+    fecha,bitacora:document.getElementById("mf_bit").value,
+    operacion:op,placas:document.getElementById("mf_placas").value,
+    eco:document.getElementById("mf_eco").value,
+    transportista:document.getElementById("mf_trans").value,
+    gps1:document.getElementById("mf_gps1").value,
+    gps2:document.getElementById("mf_gps2").value,
+    monitorista:mon
+  };
+  if(recIdx>=0) MON_DATA[stIdx][recIdx]=rec;
+  else MON_DATA[stIdx].push(rec);
+  monSave();
+  closeModal();
+  render();
+  toast(recIdx>=0?"✅ Registro actualizado":"✅ Registro agregado","ok");
+}
+
+function delMonRow(stIdx,recIdx){
+  if(!isAdmin())return;
+  if(!confirm("¿Eliminar este registro?"))return;
+  MON_DATA[stIdx].splice(recIdx,1);
+  monSave();render();toast("🗑️ Registro eliminado","ok");
 }
 
 // ── SECTION ───────────────────────────────────────────────────────────────────
@@ -760,16 +1047,37 @@ async function submitModal(sec,idx){
 document.getElementById("modalOverlay").addEventListener("click",function(e){if(e.target===this)closeModal();});
 
 // ── START ──────────────────────────────────────────────────────────────────────
+function applyClientNav(){
+  const hasMl     = CLIENT==="admin" || CLIENT==="ml";
+  const hasPirelli= CLIENT==="admin" || CLIENT==="pirelli";
+  document.querySelectorAll(".nav-ml").forEach(el=>el.style.display=hasMl?"flex":"none");
+  document.querySelectorAll(".nav-pirelli").forEach(el=>el.style.display=hasPirelli?"flex":"none");
+  // Topbar title
+  const profile=CLIENT_PROFILES[CLIENT]||{};
+  const lbl=profile.label||"Sistema";
+  document.getElementById("topbarTitle").textContent=
+    CLIENT==="admin" ? "AI27 — Panel Total" :
+    CLIENT==="ml"    ? "Mercado Libre — Inventario Operacional" :
+                       "Pirelli — Centro de Monitoreo AI27";
+}
+
 function startApp(){
   document.getElementById("loginScreen").classList.add("hidden");
+  applyClientNav();
+  const profile=CLIENT_PROFILES[CLIENT]||{};
   const badge=document.getElementById("roleBadge");
-  badge.textContent=isAdmin()?"🔑 Admin":"👁️ Viewer";
+  const roleLabel=isAdmin()?"🔑 Admin":"👁️ Viewer";
+  badge.textContent=`${profile.icon} ${profile.label} · ${roleLabel}`;
   badge.className="role-badge "+(isAdmin()?"admin":"viewer");
+  // Default page based on client
+  if(CLIENT==="pirelli") { page="monitoreo1"; }
+  else { page="dashboard"; }
   loadAll();
 }
 
 const savedRole=sessionStorage.getItem("inv_role");
-if(savedRole){ ROLE=savedRole; startApp(); }
+const savedClient=sessionStorage.getItem("inv_client");
+if(savedRole&&savedClient){ ROLE=savedRole; CLIENT=savedClient; startApp(); }
 </script>
 </body>
 </html>
