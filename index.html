@@ -202,6 +202,8 @@
   .empty-state .ei{font-size:36px;margin-bottom:10px;}
   .viewer-notice{background:var(--blue-bg);color:var(--blue);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;margin-bottom:14px;}
 
+  .nav-mlmon-sep{height:1px;background:rgba(255,255,255,.06);margin:6px 10px;}
+  .modal-section-label{font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.5px;padding:6px 0 2px;border-bottom:1px solid var(--border);margin-bottom:4px;}
   .client-card{background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s;}
   /* TIMER STATES */
   .timer-ok{color:var(--green);font-weight:700;}
@@ -232,21 +234,26 @@
       <p>Control de Inventario &amp; Centro de Monitoreo</p>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:18px;">
-      <div class="client-card" id="cc-admin" onclick="selectClient('admin')" title="Acceso total al sistema">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
+      <div class="client-card" id="cc-admin" onclick="selectClient('admin')" title="Acceso total">
         <div class="client-icon">🔑</div>
         <div class="client-name">Administrador</div>
         <div class="client-sub">Acceso total</div>
       </div>
       <div class="client-card" id="cc-ml" onclick="selectClient('ml')" title="Inventario Operacional">
         <div class="client-icon">🏪</div>
-        <div class="client-name">Mercado Libre</div>
-        <div class="client-sub">Inventario</div>
+        <div class="client-name">ML Inventario</div>
+        <div class="client-sub">Inventario Ops</div>
       </div>
-      <div class="client-card" id="cc-pirelli" onclick="selectClient('pirelli')" title="Centro de Monitoreo">
+      <div class="client-card" id="cc-mlmon" onclick="selectClient('mlmon')" title="ML Centro de Monitoreo">
+        <div class="client-icon">🗺️</div>
+        <div class="client-name">ML Monitoreo</div>
+        <div class="client-sub">Centro de Monitoreo</div>
+      </div>
+      <div class="client-card" id="cc-pirelli" onclick="selectClient('pirelli')" title="Pirelli Centro de Monitoreo">
         <div class="client-icon">📡</div>
         <div class="client-name">Pirelli</div>
-        <div class="client-sub">Monitoreo</div>
+        <div class="client-sub">Centro Monitoreo</div>
       </div>
     </div>
 
@@ -290,13 +297,20 @@
     <div class="menu-toggle" onclick="toggleSidebar()">☰</div>
     <div class="nav-item active" onclick="go('dashboard')" data-p="dashboard"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></div>
     <div class="sidebar-sep"></div>
-    <!-- ML: Inventario -->
+    <!-- ML: Inventario Operacional -->
     <div class="nav-item nav-ml" onclick="go('motos')" data-p="motos"><span class="nav-icon">🏍️</span><span class="nav-label">Motos</span><span class="nav-badge" id="nb-motos">–</span></div>
     <div class="nav-item nav-ml" onclick="go('patrullas')" data-p="patrullas"><span class="nav-icon">🚓</span><span class="nav-label">Patrullas</span><span class="nav-badge" id="nb-patrullas">–</span></div>
     <div class="nav-item nav-ml" onclick="go('gps')" data-p="gps"><span class="nav-icon">📡</span><span class="nav-label">GPS</span><span class="nav-badge" id="nb-gps">–</span></div>
     <div class="nav-item nav-ml" onclick="go('equipos')" data-p="equipos"><span class="nav-icon">💻</span><span class="nav-label">Equipos</span><span class="nav-badge" id="nb-equipos">–</span></div>
     <div class="nav-item nav-ml" onclick="go('comunicacion')" data-p="comunicacion"><span class="nav-icon">📻</span><span class="nav-label">Comunicación</span><span class="nav-badge" id="nb-comunicacion">–</span></div>
     <div class="nav-item nav-ml" onclick="go('reasignacion')" data-p="reasignacion"><span class="nav-icon">👮</span><span class="nav-label">Reasignación</span><span class="nav-badge" id="nb-reasignacion">–</span></div>
+    <!-- ML: Centro de Monitoreo -->
+    <div class="sidebar-sep nav-mlmon"></div>
+    <div class="nav-item nav-mlmon" onclick="go('cat_origenes')" data-p="cat_origenes"><span class="nav-icon">📍</span><span class="nav-label">Orígenes</span><span class="nav-badge" id="nb-orig">–</span></div>
+    <div class="nav-item nav-mlmon" onclick="go('cat_destinos')" data-p="cat_destinos"><span class="nav-icon">🏁</span><span class="nav-label">Destinos</span><span class="nav-badge" id="nb-dest">–</span></div>
+    <div class="nav-item nav-mlmon" onclick="go('cat_kits')" data-p="cat_kits"><span class="nav-icon">📦</span><span class="nav-label">Kit Tecnológico</span><span class="nav-badge" id="nb-kits">–</span></div>
+    <div class="nav-item nav-mlmon" onclick="go('rpa_int')" data-p="rpa_int"><span class="nav-icon">🤖</span><span class="nav-label">Integ. RPA</span><span class="nav-badge" id="nb-rpa">–</span></div>
+    <div class="nav-item nav-mlmon" onclick="go('rpa_inc')" data-p="rpa_inc"><span class="nav-icon">⚠️</span><span class="nav-label">Incidencias RPA</span><span class="nav-badge" id="nb-inc">–</span></div>
     <!-- Pirelli: Monitoreo -->
     <div class="sidebar-sep nav-pirelli"></div>
     <div class="nav-item nav-pirelli" onclick="go('monitoreo1')" data-p="monitoreo1"><span class="nav-icon">📡</span><span class="nav-label">Estación 1</span><span class="nav-badge" id="nb-mon1">–</span></div>
@@ -311,23 +325,32 @@
 
 <script>
 // ── AUTH & CLIENT PROFILES ────────────────────────────────────────────────────
+// ── USERS ─────────────────────────────────────────────────────────────────────
+// role: "admin" = full CRUD | "editor" = edit own blocks | "viewer" = read-only
 const USERS = {
-  gerencia:    {pass:"Ops2026",   role:"admin",   client:"admin"},
-  mercadolibre:{pass:"ML2026",    role:"admin",   client:"ml"},
-  pirelli:     {pass:"PIR2026",   role:"admin",   client:"pirelli"},
-  monitorista: {pass:"MON2026",   role:"viewer",  client:"pirelli"},
+  gerencia:       {pass:"Ops2026",  role:"admin",   client:"admin"},
+  // Mercado Libre — Inventario Operacional (ML legacy)
+  mercadolibre:   {pass:"ML2026",   role:"admin",   client:"ml"},
+  // Mercado Libre — Centro de Monitoreo
+  mlmonitoreo:    {pass:"MLMON26",  role:"admin",   client:"mlmon"},
+  // Pirelli — Admin del centro de monitoreo
+  pirelli:        {pass:"PIR2026",  role:"admin",   client:"pirelli"},
+  // Pirelli — Monitoristas (edición parcial)
+  monitorista:    {pass:"MON2026",  role:"viewer",  client:"pirelli"},
 };
 
-// CLIENT PROFILES define qué secciones ve cada usuario
+// CLIENT_PROFILES define qué módulos ve cada cliente
+// modules: "ml" = inventario, "mlmon" = ML monitoreo, "pirelli" = Pirelli monitoreo
 const CLIENT_PROFILES = {
-  admin:   {label:"Administrador", icon:"🔑",  modules:["ml","pirelli"], badge:"admin"},
-  ml:      {label:"Mercado Libre", icon:"🏪",  modules:["ml"],           badge:"viewer"},
-  pirelli: {label:"Pirelli",       icon:"📡",  modules:["pirelli"],      badge:"viewer"},
+  admin:  {label:"Administrador",          icon:"🔑", modules:["ml","mlmon","pirelli"]},
+  ml:     {label:"Mercado Libre Inventario",icon:"🏪", modules:["ml"]},
+  mlmon:  {label:"ML Centro de Monitoreo", icon:"🗺️", modules:["mlmon"]},
+  pirelli:{label:"Pirelli Centro Monitoreo",icon:"📡", modules:["pirelli"]},
 };
 
 let ROLE = null;
-let CLIENT = null;  // "admin" | "ml" | "pirelli"
-let SELECTED_CLIENT = "admin"; // default card selected in login
+let CLIENT = null;
+let SELECTED_CLIENT = "admin";
 
 function selectClient(c){
   SELECTED_CLIENT = c;
@@ -579,15 +602,19 @@ async function loadAll(silent=false){
   try{
     // Carga inventario ML + hojas de monitoreo Pirelli en paralelo
     const hasMl      = !CLIENT || CLIENT==="admin" || CLIENT==="ml";
+    const hasMlmon   = !CLIENT || CLIENT==="admin" || CLIENT==="mlmon";
     const hasPirelli = !CLIENT || CLIENT==="admin" || CLIENT==="pirelli";
     const mlSheets   = hasMl   ? Object.keys(SECS).map(sec=>jsonpFetch(sec).then(rows=>({sec,rows}))) : [];
     const monSheets  = hasPirelli ? MON_SHEETS.map((sh,i)=>jsonpFetch(sh).then(rows=>({monIdx:i,rows}))) : [];
-    const all = await Promise.all([...mlSheets,...monSheets]);
+    const mlmonSheets= hasMlmon  ? MLMON_SHEETS.map(sh=>jsonpFetch(sh).then(rows=>({mlmonSec:sh,rows})).catch(()=>({mlmonSec:sh,rows:[]}))) : [];
+    const all = await Promise.all([...mlSheets,...monSheets,...mlmonSheets]);
     all.forEach(res=>{
       if(res.sec !== undefined){
         DATA[res.sec]=Array.isArray(res.rows)?res.rows.filter(r=>Object.values(r).some(v=>v&&v!=="")):[]; 
       } else if(res.monIdx !== undefined){
         MON_DATA[res.monIdx]=Array.isArray(res.rows)?res.rows.filter(r=>Object.values(r).some(v=>v&&v!=="")):[]; 
+      } else if(res.mlmonSec !== undefined){
+        MLMON_DATA[res.mlmonSec]=Array.isArray(res.rows)?res.rows.filter(r=>Object.values(r).some(v=>v&&v!=="")):[]; 
       }
     });
     sync("ok");
@@ -645,12 +672,21 @@ function updateBadges(){
     el.textContent=`${s.e}/${s.total}`;
     el.className="nav-badge"+(s.p+s.n>0?" warn":"");
   });
-  // monitoreo badges
   [0,1,2].forEach(i=>{
     const el=document.getElementById("nb-mon"+(i+1));
     if(!el)return;
     el.textContent=MON_DATA[i].length;
     el.className="nav-badge";
+  });
+  // ML Monitoreo badges
+  const badgeMap={cat_origenes:"nb-orig",cat_destinos:"nb-dest",cat_kits:"nb-kits",rpa_int:"nb-rpa",rpa_inc:"nb-inc"};
+  Object.entries(badgeMap).forEach(([k,id])=>{
+    const el=document.getElementById(id); if(!el)return;
+    const d=MLMON_DATA[k]||[]; el.textContent=d.length; el.className="nav-badge";
+    if(k==="rpa_inc"){
+      const pend=d.filter(r=>r.estatus_incidencia&&r.estatus_incidencia!=="Finalizada").length;
+      if(pend) el.className="nav-badge warn";
+    }
   });
 }
 
@@ -665,13 +701,19 @@ function go(p){
 function render(){
   updateBadges();
   let html="";
-  if(page==="dashboard") html=renderDash();
-  else if(page==="monitoreo1") html=renderMonitoreo(0);
-  else if(page==="monitoreo2") html=renderMonitoreo(1);
-  else if(page==="monitoreo3") html=renderMonitoreo(2);
-  else html=renderSec(page);
+  if(page==="dashboard")         html=renderDash();
+  else if(page==="monitoreo1")   html=renderMonitoreo(0);
+  else if(page==="monitoreo2")   html=renderMonitoreo(1);
+  else if(page==="monitoreo3")   html=renderMonitoreo(2);
+  else if(page==="cat_origenes") html=renderMlmon("cat_origenes");
+  else if(page==="cat_destinos") html=renderMlmon("cat_destinos");
+  else if(page==="cat_kits")     html=renderMlmon("cat_kits");
+  else if(page==="rpa_int")      html=renderMlmon("rpa_int");
+  else if(page==="rpa_inc")      html=renderMlmon("rpa_inc");
+  else                           html=renderSec(page);
   document.getElementById("mainContent").innerHTML=html;
-  if(page!=="dashboard"&&!page.startsWith("monitoreo")) bindSelects();
+  const isMlmon=["cat_origenes","cat_destinos","cat_kits","rpa_int","rpa_inc"].includes(page);
+  if(page!=="dashboard"&&!page.startsWith("monitoreo")&&!isMlmon) bindSelects();
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
@@ -778,8 +820,27 @@ function renderDash(){
       <tbody>${opRows}</tbody></table></div>`:""}`;
   }
 
-  return`<div class="page-header"><h2>📊 Panel Ejecutivo</h2><p>Datos en tiempo real · ${CLIENT==="admin"?"Vista completa":CLIENT==="ml"?"Mercado Libre":"Pirelli"}</p></div>
-  ${mlSection}${pirSection}`;
+  // ML Monitoreo section in dashboard
+  let mlmonSection="";
+  if(CLIENT==="admin"||CLIENT==="mlmon"){
+    const orig=MLMON_DATA.cat_origenes||[]; const dest=MLMON_DATA.cat_destinos||[];
+    const kits=MLMON_DATA.cat_kits||[];
+    const rpaInt=MLMON_DATA.rpa_int||[]; const rpaInc=MLMON_DATA.rpa_inc||[];
+    const incPend=rpaInc.filter(r=>r.estatus_incidencia&&r.estatus_incidencia!=="Finalizada").length;
+    mlmonSection=`
+    ${CLIENT==="admin"?'<div style="height:1px;background:var(--border);margin:24px 0"></div>':""}
+    <div class="dash-client-header">🗺️ ML Centro de Monitoreo</div>
+    <div class="kpi-grid">
+      <div class="kpi-card blue" onclick="go('cat_origenes')" style="cursor:pointer"><div class="kpi-label">📍 Orígenes</div><div class="kpi-value">${orig.length}</div></div>
+      <div class="kpi-card green" onclick="go('cat_destinos')" style="cursor:pointer"><div class="kpi-label">🏁 Destinos</div><div class="kpi-value">${dest.length}</div></div>
+      <div class="kpi-card purple" onclick="go('cat_kits')" style="cursor:pointer"><div class="kpi-label">📦 Kits Tech</div><div class="kpi-value">${kits.length}</div></div>
+      <div class="kpi-card orange" onclick="go('rpa_int')" style="cursor:pointer"><div class="kpi-label">🤖 Integ. RPA</div><div class="kpi-value">${rpaInt.length}</div></div>
+      <div class="kpi-card ${incPend?"red":"total"}" onclick="go('rpa_inc')" style="cursor:pointer"><div class="kpi-label">⚠️ Incidencias</div><div class="kpi-value">${rpaInc.length}</div><div class="kpi-sub">${incPend?incPend+" activas":""}</div></div>
+    </div>`;
+  }
+
+  return`<div class="page-header"><h2>📊 Panel Ejecutivo</h2><p>Datos en tiempo real · ${CLIENT==="admin"?"Vista completa":CLIENT_PROFILES[CLIENT]?.label||CLIENT}</p></div>
+  ${mlSection}${mlmonSection}${pirSection}`;
 }
 
 // ── MONITOREO RENDER ──────────────────────────────────────────────────────────
@@ -1116,6 +1177,270 @@ async function delMonRow(stIdx,recIdx){
 setInterval(()=>{ if(page&&page.startsWith("monitoreo")) render(); }, 60000);
 
 
+// ── ML CENTRO DE MONITOREO — DATA MODEL ──────────────────────────────────────
+const MLMON_SHEETS = ["cat_origenes","cat_destinos","cat_kits","rpa_int","rpa_inc"];
+let MLMON_DATA = {cat_origenes:[],cat_destinos:[],cat_kits:[],rpa_int:[],rpa_inc:[]};
+
+// Transportistas compartidos (RPA)
+const TRANSPORTISTAS_RPA = [
+  "FEMSA","BIMBO","LALA","MABE","HERDEZ","BACHOCO",
+  "GRUMA","SIGMA","ALSEA","ARCA CONTINENTAL","Otro"
+];
+
+const MLMON_DEFS = {
+  cat_origenes:{
+    label:"Catálogo de Orígenes", icon:"📍", color:"#0369A1",
+    fields:[
+      {k:"nombre_bitacora", lb:"Nombre en Bitácora", req:true},
+      {k:"nomenclatura",    lb:"Nomenclatura",       req:true},
+      {k:"coordenadas",     lb:"Coordenadas",        type:"text", ph:"19.432608,-99.133209"},
+      {k:"estado",          lb:"Estado",             type:"text", ph:"Ciudad de México"},
+      {k:"geocerca",        lb:"Geocerca creada",    type:"check"},
+    ]
+  },
+  cat_destinos:{
+    label:"Catálogo de Destinos", icon:"🏁", color:"#15803D",
+    fields:[
+      {k:"nombre_bitacora", lb:"Nombre en Bitácora", req:true},
+      {k:"nomenclatura",    lb:"Nomenclatura",       req:true},
+      {k:"coordenadas",     lb:"Coordenadas",        type:"text", ph:"20.966667,-89.623333"},
+      {k:"estado",          lb:"Estado",             type:"text", ph:"Yucatán"},
+    ]
+  },
+  cat_kits:{
+    label:"Catálogo Kit Tecnológico", icon:"📦", color:"#7C3AED",
+    fields:[
+      {k:"nombre_kit",lb:"Nombre del Kit", req:true},
+      {k:"origenes",  lb:"Orígenes",   type:"multiref", src:"cat_origenes",   sfk:"nombre_bitacora"},
+      {k:"destinos",  lb:"Destinos",   type:"multiref", src:"cat_destinos",   sfk:"nombre_bitacora"},
+    ]
+  },
+  rpa_int:{
+    label:"Integraciones RPA", icon:"🤖", color:"#C2410C",
+    fields:[
+      {k:"transportista",      lb:"Transportista",          type:"select_rpa", req:true},
+      {k:"url",                lb:"URL",                    type:"url"},
+      {k:"usuario",            lb:"Usuario",                type:"text"},
+      {k:"contrasena",         lb:"Contraseña",             type:"password"},
+      {k:"estatus_integracion",lb:"Estatus de Integración", type:"estatus_rpa"},
+    ]
+  },
+  rpa_inc:{
+    label:"Incidencias de Enlace RPA", icon:"⚠️", color:"#B91C1C",
+    fields:[
+      {k:"transportista",     lb:"Transportista",         type:"select_rpa", req:true},
+      {k:"url",               lb:"URL",                   type:"url"},
+      {k:"usuario",           lb:"Usuario",               type:"text"},
+      {k:"contrasena",        lb:"Contraseña",            type:"password"},
+      {k:"descripcion_falla", lb:"Descripción de Falla",  type:"textarea"},
+      {k:"seguimiento",       lb:"Seguimiento",           type:"textarea"},
+      {k:"estatus_incidencia",lb:"Estatus de Incidencia", type:"estatus_inc"},
+    ]
+  }
+};
+
+// ── ML MONITOREO — RENDER ─────────────────────────────────────────────────────
+function canEditMlmon(){ return isAdmin() || CLIENT==="mlmon"; }
+
+function renderMlmon(sec){
+  const def=MLMON_DEFS[sec];
+  const rows=MLMON_DATA[sec]||[];
+  const canEdit=canEditMlmon();
+  const viewerBar=!canEdit?`<div class="viewer-notice">👁️ Solo lectura</div>`:"";
+  const addBtn=canEdit?`<button class="btn-add" onclick="openMlmonModal('${sec}')">＋ Agregar</button>`:"";
+
+  // Build table headers
+  const ths=def.fields.map(f=>`<th>${f.lb.toUpperCase()}</th>`).join("")+(canEdit?"<th>ACCIONES</th>":"");
+  
+  const tbody=rows.length===0
+    ?`<tr><td colspan="${def.fields.length+(canEdit?1:0)}" style="text-align:center;padding:28px;color:var(--muted)">📭 Sin registros.${canEdit?" Agrega el primero.":""}</td></tr>`
+    :rows.map((r,i)=>{
+        const cells=def.fields.map(f=>{
+          const v=r[f.k]||"";
+          if(f.type==="check")
+            return`<td><span style="font-size:13px">${v==="SI"?"✅ Sí":"⬜ No"}</span></td>`;
+          if(f.type==="estatus_rpa"){
+            const ok=v==="Finalizada";
+            return`<td><span style="background:${ok?"var(--green-bg)":"var(--yellow-bg)"};color:${ok?"var(--green)":"var(--yellow)"};font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">${ok?"✅":"⏳"} ${v||"–"}</span></td>`;
+          }
+          if(f.type==="estatus_inc"){
+            const colors={"Finalizada":"var(--green-bg);color:var(--green)","Pendiente":"var(--yellow-bg);color:var(--yellow)","En proceso":"var(--blue-bg);color:var(--blue)"};
+            const icons={"Finalizada":"✅","Pendiente":"⏳","En proceso":"🔄"};
+            return`<td><span style="background:${colors[v]||"var(--border)"};font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">${icons[v]||"–"} ${v||"–"}</span></td>`;
+          }
+          if(f.type==="url")
+            return v?`<td><a href="${v}" target="_blank" style="color:var(--blue);font-size:11px;text-decoration:none">🔗 Abrir</a></td>`:`<td style="color:var(--muted)">–</td>`;
+          if(f.type==="password")
+            return`<td><span style="font-family:monospace;font-size:11px;color:var(--muted)">••••••••</span></td>`;
+          if(f.type==="textarea")
+            return`<td style="max-width:200px;font-size:11px;white-space:normal;line-height:1.4">${v||"–"}</td>`;
+          if(f.type==="multiref"){
+            const items=(v||"").split("|").filter(Boolean);
+            return`<td><div style="display:flex;flex-wrap:wrap;gap:3px">${items.map(it=>`<span style="background:var(--blue-bg);color:var(--blue);font-size:10px;font-weight:600;padding:1px 6px;border-radius:8px">${it}</span>`).join("")||"–"}</div></td>`;
+          }
+          return`<td style="font-size:12px">${v||"–"}</td>`;
+        }).join("");
+        const actions=canEdit?`<td><div class="actions-cell">
+          <button class="btn-action edit" onclick="openMlmonModal('${sec}',${i})">✏️</button>
+          <button class="btn-action del" onclick="delMlmonRow('${sec}',${i})">🗑️</button>
+        </div></td>`:"";
+        return`<tr>${cells}${actions}</tr>`;
+      }).join("");
+
+  // KPIs for rpa_inc
+  let kpis="";
+  if(sec==="rpa_inc"){
+    const fin=rows.filter(r=>r.estatus_incidencia==="Finalizada").length;
+    const pend=rows.filter(r=>r.estatus_incidencia==="Pendiente").length;
+    const enp=rows.filter(r=>r.estatus_incidencia==="En proceso").length;
+    kpis=`<div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr));margin-bottom:14px">
+      <div class="kpi-card total"><div class="kpi-label">Total</div><div class="kpi-value">${rows.length}</div></div>
+      <div class="kpi-card green"><div class="kpi-label">✅ Finalizada</div><div class="kpi-value">${fin}</div></div>
+      <div class="kpi-card yellow"><div class="kpi-label">⏳ Pendiente</div><div class="kpi-value">${pend}</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">🔄 En proceso</div><div class="kpi-value">${enp}</div></div>
+    </div>`;
+  } else if(sec==="rpa_int"){
+    const fin=rows.filter(r=>r.estatus_integracion==="Finalizada").length;
+    const pend=rows.filter(r=>r.estatus_integracion==="Pendiente").length;
+    kpis=`<div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr));margin-bottom:14px">
+      <div class="kpi-card total"><div class="kpi-label">Total</div><div class="kpi-value">${rows.length}</div></div>
+      <div class="kpi-card green"><div class="kpi-label">✅ Finalizada</div><div class="kpi-value">${fin}</div></div>
+      <div class="kpi-card yellow"><div class="kpi-label">⏳ Pendiente</div><div class="kpi-value">${pend}</div></div>
+    </div>`;
+  } else if(sec==="cat_origenes"){
+    const geo=rows.filter(r=>r.geocerca==="SI").length;
+    kpis=`<div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr));margin-bottom:14px">
+      <div class="kpi-card total"><div class="kpi-label">Total</div><div class="kpi-value">${rows.length}</div></div>
+      <div class="kpi-card green"><div class="kpi-label">✅ Geocerca</div><div class="kpi-value">${geo}</div></div>
+      <div class="kpi-card yellow"><div class="kpi-label">⬜ Sin geocerca</div><div class="kpi-value">${rows.length-geo}</div></div>
+    </div>`;
+  }
+
+  return`
+  ${viewerBar}
+  <div class="page-header">
+    <h2>${def.icon} ${def.label}</h2>
+    <p>${rows.length} registros · ML Centro de Monitoreo</p>
+  </div>
+  ${kpis}
+  <div class="table-toolbar" style="justify-content:flex-end">${addBtn}</div>
+  <div class="res-table-wrap" style="overflow-x:auto">
+    <table class="res-table">
+      <thead><tr>${ths}</tr></thead>
+      <tbody>${tbody}</tbody>
+    </table>
+  </div>`;
+}
+
+// ── ML MONITOREO — MODAL ──────────────────────────────────────────────────────
+function openMlmonModal(sec, recIdx=-1){
+  if(!canEditMlmon())return;
+  const def=MLMON_DEFS[sec];
+  const r=recIdx>=0?(MLMON_DATA[sec][recIdx]||{}):{};
+  const title=recIdx>=0?`✏️ Editar — ${def.label}`:`➕ Nuevo — ${def.label}`;
+
+  const fields=def.fields.map(f=>{
+    const v=r[f.k]||"";
+    let input="";
+    if(f.type==="check")
+      input=`<div style="display:flex;align-items:center;gap:8px;padding:8px 0">
+        <input type="checkbox" id="mf_${f.k}" ${v==="SI"?"checked":""} style="width:18px;height:18px;cursor:pointer"/>
+        <span style="font-size:13px">Geocerca creada</span></div>`;
+    else if(f.type==="select_rpa")
+      input=`<select id="mf_${f.k}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+        <option value="">Seleccionar transportista…</option>
+        ${TRANSPORTISTAS_RPA.map(t=>`<option value="${t}"${v===t?" selected":""}>${t}</option>`).join("")}
+      </select>`;
+    else if(f.type==="estatus_rpa")
+      input=`<select id="mf_${f.k}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+        <option value="">–</option>
+        <option value="Finalizada"${v==="Finalizada"?" selected":""}>✅ Finalizada</option>
+        <option value="Pendiente"${v==="Pendiente"?" selected":""}>⏳ Pendiente</option>
+      </select>`;
+    else if(f.type==="estatus_inc")
+      input=`<select id="mf_${f.k}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+        <option value="">–</option>
+        <option value="Finalizada"${v==="Finalizada"?" selected":""}>✅ Finalizada</option>
+        <option value="Pendiente"${v==="Pendiente"?" selected":""}>⏳ Pendiente</option>
+        <option value="En proceso"${v==="En proceso"?" selected":""}>🔄 En proceso</option>
+      </select>`;
+    else if(f.type==="textarea")
+      input=`<textarea id="mf_${f.k}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;min-height:80px;font-family:Inter,sans-serif">${v}</textarea>`;
+    else if(f.type==="url")
+      input=`<input id="mf_${f.k}" type="url" placeholder="https://" value="${v}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px"/>`;
+    else if(f.type==="password")
+      input=`<input id="mf_${f.k}" type="text" placeholder="Contraseña" value="${v}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace"/>`;
+    else if(f.type==="multiref"){
+      const srcRows=MLMON_DATA[f.src]||[];
+      const selected=(v||"").split("|").filter(Boolean);
+      const opts=srcRows.map(sr=>{
+        const key=sr[f.sfk]||"";
+        return`<label style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;cursor:pointer">
+          <input type="checkbox" value="${key}" ${selected.includes(key)?"checked":""} class="mlmon-chk-${f.k}"/>
+          ${key}
+        </label>`;
+      }).join("")||`<span style="font-size:11px;color:var(--muted)">Sin ${f.lb} en catálogo aún.</span>`;
+      input=`<div style="max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px">${opts}</div>`;
+    } else
+      input=`<input id="mf_${f.k}" type="text" placeholder="${f.ph||""}" value="${v}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px"/>`;
+
+    return`<div class="form-group${f.type==="textarea"||f.type==="multiref"?" full":""}">
+      <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;display:block">${f.lb}${f.req?" *":""}</label>
+      ${input}</div>`;
+  }).join("");
+
+  document.getElementById("modalBox").innerHTML=`
+    <h3>${title}</h3>
+    <div class="form-grid">${fields}</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveMlmonRow('${sec}',${recIdx})">Guardar en Sheets</button>
+    </div>`;
+  document.getElementById("modalOverlay").classList.add("open");
+}
+
+async function saveMlmonRow(sec,recIdx){
+  const def=MLMON_DEFS[sec];
+  const rec={};
+  for(const f of def.fields){
+    if(f.type==="check"){
+      const el=document.getElementById("mf_"+f.k);
+      rec[f.k]=el&&el.checked?"SI":"NO";
+    } else if(f.type==="multiref"){
+      const chks=document.querySelectorAll(`.mlmon-chk-${f.k}:checked`);
+      rec[f.k]=Array.from(chks).map(cb=>cb.value).join("|");
+    } else {
+      const el=document.getElementById("mf_"+f.k);
+      rec[f.k]=el?el.value:"";
+    }
+  }
+  // Validate required
+  const missing=def.fields.filter(f=>f.req&&!rec[f.k]);
+  if(missing.length){toast("⚠️ "+missing.map(f=>f.lb).join(", ")+" son obligatorios","err");return;}
+  const b=document.getElementById("modalBox").querySelector(".btn-save");
+  if(b){b.disabled=true;b.textContent="Guardando…";}
+  closeModal(); sync("busy");
+  try{
+    if(recIdx>=0){ await apiPost({sheet:sec,action:"update",index:recIdx,row:rec}); }
+    else {          await apiPost({sheet:sec,action:"add",row:rec}); }
+    sync("ok");
+    toast(recIdx>=0?"✅ Actualizado":"✅ Agregado","ok");
+    await loadAll(true);
+  }catch(e){ sync("error"); toast("❌ Error al guardar","err"); }
+}
+
+async function delMlmonRow(sec,recIdx){
+  if(!canEditMlmon())return;
+  if(!confirm("¿Eliminar este registro?"))return;
+  sync("busy");
+  try{
+    await apiPost({sheet:sec,action:"delete",index:recIdx});
+    sync("ok"); toast("🗑️ Eliminado","ok");
+    await loadAll(true);
+  }catch(e){ sync("error"); toast("❌ Error al eliminar","err"); }
+}
+
+
 // ── SECTION ───────────────────────────────────────────────────────────────────
 function renderSec(sec){
   const def=SECS[sec],s=stats(sec),pct=s.total>0?Math.round(s.e/s.total*100):0;
@@ -1294,16 +1619,18 @@ document.getElementById("modalOverlay").addEventListener("click",function(e){if(
 // ── START ──────────────────────────────────────────────────────────────────────
 function applyClientNav(){
   const hasMl     = CLIENT==="admin" || CLIENT==="ml";
+  const hasMlmon  = CLIENT==="admin" || CLIENT==="mlmon";
   const hasPirelli= CLIENT==="admin" || CLIENT==="pirelli";
   document.querySelectorAll(".nav-ml").forEach(el=>el.style.display=hasMl?"flex":"none");
+  document.querySelectorAll(".nav-mlmon").forEach(el=>el.style.display=hasMlmon?"flex":"none");
   document.querySelectorAll(".nav-pirelli").forEach(el=>el.style.display=hasPirelli?"flex":"none");
-  // Topbar title
-  const profile=CLIENT_PROFILES[CLIENT]||{};
-  const lbl=profile.label||"Sistema";
-  document.getElementById("topbarTitle").textContent=
-    CLIENT==="admin" ? "AI27 — Panel Total" :
-    CLIENT==="ml"    ? "Mercado Libre — Inventario Operacional" :
-                       "Pirelli — Centro de Monitoreo AI27";
+  const titles={
+    admin:"AI27 — Panel Total",
+    ml:"Mercado Libre — Inventario Operacional",
+    mlmon:"ML — Centro de Monitoreo",
+    pirelli:"Pirelli — Centro de Monitoreo AI27"
+  };
+  document.getElementById("topbarTitle").textContent=titles[CLIENT]||"AI27";
 }
 
 function startApp(){
@@ -1314,8 +1641,8 @@ function startApp(){
   const roleLabel=isAdmin()?"🔑 Admin":"👁️ Viewer";
   badge.textContent=`${profile.icon} ${profile.label} · ${roleLabel}`;
   badge.className="role-badge "+(isAdmin()?"admin":"viewer");
-  // Default page based on client
   if(CLIENT==="pirelli") { page="monitoreo1"; }
+  else if(CLIENT==="mlmon") { page="cat_origenes"; }
   else { page="dashboard"; }
   startAutoRefresh();
   loadAll();
