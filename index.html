@@ -353,6 +353,7 @@ function enterViewer(){
 }
 
 function logout(){
+  stopAutoRefresh();
   sessionStorage.clear();
   ROLE=null; CLIENT=null;
   document.getElementById("loginScreen").classList.remove("hidden");
@@ -471,16 +472,24 @@ const OP_COLORS = {
   "Manzanillo":"#EDE9FE;color:#7C3AED","Veracruz":"#DCFCE7;color:#166534",
   "San Luis Potosi":"#FEF0E7;color:#C2410C","Puebla":"#F1F5F9;color:#475569"
 };
-const MON_KEY = "mon_ai27_v1";
-let MON_DATA = [[],[],[]]; // 3 estaciones
-let monModal = {stIdx:0, recIdx:-1};
+const MON_SHEETS = ["monitoreo1","monitoreo2","monitoreo3"];
+let MON_DATA = [[],[],[]]; // cargado desde Sheets en tiempo real
 let monFilt = {op:"",monitor:"",gps:""};
+let monBusy = false;
 
-function monLoad(){
-  try{ const d=localStorage.getItem(MON_KEY); if(d) MON_DATA=JSON.parse(d); }catch(e){}
+async function loadMonitoreo(silent=false){
+  try{
+    const results = await Promise.all(
+      MON_SHEETS.map((sh,i) => jsonpFetch(sh).then(rows=>({i,rows})))
+    );
+    results.forEach(({i,rows})=>{
+      MON_DATA[i] = Array.isArray(rows) ? rows.filter(r=>Object.values(r).some(v=>v&&v!=="")) : [];
+    });
+    if(silent) toast("\u2705 Monitoreo actualizado","ok");
+  }catch(err){
+    if(!silent) toast("\u26a0\ufe0f Error cargando monitoreo","err");
+  }
 }
-function monSave(){ localStorage.setItem(MON_KEY,JSON.stringify(MON_DATA)); }
-monLoad();
 
 let DATA=Object.fromEntries(Object.keys(SECS).map(k=>[k,[]]));
 let page="dashboard",srch="",filt="TODOS",filtSub="TODOS",busy=false,sideOpen=false;
@@ -519,8 +528,19 @@ async function loadAll(silent=false){
   if(!silent){document.getElementById("loadingText").textContent="Cargando datos…";document.getElementById("loadingOverlay").classList.remove("hidden");}
   sync("busy");
   try{
-    const results=await Promise.all(Object.keys(SECS).map(sec=>jsonpFetch(sec).then(rows=>({sec,rows}))));
-    results.forEach(({sec,rows})=>{DATA[sec]=Array.isArray(rows)?rows.filter(r=>Object.values(r).some(v=>v&&v!=="")):[]; });
+    // Carga inventario ML + hojas de monitoreo Pirelli en paralelo
+    const hasMl      = !CLIENT || CLIENT==="admin" || CLIENT==="ml";
+    const hasPirelli = !CLIENT || CLIENT==="admin" || CLIENT==="pirelli";
+    const mlSheets   = hasMl   ? Object.keys(SECS).map(sec=>jsonpFetch(sec).then(rows=>({sec,rows}))) : [];
+    const monSheets  = hasPirelli ? MON_SHEETS.map((sh,i)=>jsonpFetch(sh).then(rows=>({monIdx:i,rows}))) : [];
+    const all = await Promise.all([...mlSheets,...monSheets]);
+    all.forEach(res=>{
+      if(res.sec !== undefined){
+        DATA[res.sec]=Array.isArray(res.rows)?res.rows.filter(r=>Object.values(r).some(v=>v&&v!=="")):[]; 
+      } else if(res.monIdx !== undefined){
+        MON_DATA[res.monIdx]=Array.isArray(res.rows)?res.rows.filter(r=>Object.values(r).some(v=>v&&v!=="")):[]; 
+      }
+    });
     sync("ok");
     if(!silent) document.getElementById("loadingOverlay").classList.add("hidden");
     render();
@@ -842,7 +862,7 @@ function openMonModal(stIdx, recIdx=-1){
   document.getElementById("modalOverlay").classList.add("open");
 }
 
-function saveMonRow(stIdx,recIdx){
+async function saveMonRow(stIdx,recIdx){
   const fecha=document.getElementById("mf_fecha").value;
   const op=document.getElementById("mf_op").value;
   const mon=document.getElementById("mf_mon").value;
@@ -856,19 +876,39 @@ function saveMonRow(stIdx,recIdx){
     gps2:document.getElementById("mf_gps2").value,
     monitorista:mon
   };
-  if(recIdx>=0) MON_DATA[stIdx][recIdx]=rec;
-  else MON_DATA[stIdx].push(rec);
-  monSave();
+  const b=document.getElementById("modalBox").querySelector(".btn-save");
+  if(b){b.disabled=true;b.textContent="Guardando…";}
   closeModal();
-  render();
-  toast(recIdx>=0?"✅ Registro actualizado":"✅ Registro agregado","ok");
+  sync("busy");
+  try{
+    const sheet=MON_SHEETS[stIdx];
+    if(recIdx>=0){
+      await apiPost({sheet,action:"update",index:recIdx,row:rec});
+    } else {
+      await apiPost({sheet,action:"add",row:rec});
+    }
+    sync("ok");
+    toast(recIdx>=0?"✅ Registro actualizado":"✅ Registro agregado","ok");
+    await loadAll(true);
+  }catch(e){
+    sync("error");
+    toast("❌ Error al guardar en Sheets","err");
+  }
 }
 
-function delMonRow(stIdx,recIdx){
+async function delMonRow(stIdx,recIdx){
   if(!isAdmin())return;
-  if(!confirm("¿Eliminar este registro?"))return;
-  MON_DATA[stIdx].splice(recIdx,1);
-  monSave();render();toast("🗑️ Registro eliminado","ok");
+  if(!confirm("¿Eliminar este registro? Esta acción no se puede deshacer."))return;
+  sync("busy");
+  try{
+    await apiPost({sheet:MON_SHEETS[stIdx],action:"delete",index:recIdx});
+    sync("ok");
+    toast("🗑️ Registro eliminado","ok");
+    await loadAll(true);
+  }catch(e){
+    sync("error");
+    toast("❌ Error al eliminar","err");
+  }
 }
 
 // ── SECTION ───────────────────────────────────────────────────────────────────
@@ -1072,8 +1112,22 @@ function startApp(){
   // Default page based on client
   if(CLIENT==="pirelli") { page="monitoreo1"; }
   else { page="dashboard"; }
+  startAutoRefresh();
   loadAll();
 }
+
+// ── AUTO-REFRESH (cada 30s para mantener sincronía entre dispositivos) ──────────
+let autoRefreshTimer = null;
+function startAutoRefresh(){
+  stopAutoRefresh();
+  autoRefreshTimer = setInterval(()=>{
+    if(document.visibilityState==="visible") loadAll(true);
+  }, 30000);
+}
+function stopAutoRefresh(){ if(autoRefreshTimer){ clearInterval(autoRefreshTimer); autoRefreshTimer=null; } }
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible" && ROLE) loadAll(true);
+});
 
 const savedRole=sessionStorage.getItem("inv_role");
 const savedClient=sessionStorage.getItem("inv_client");
